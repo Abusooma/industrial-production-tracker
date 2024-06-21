@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Création de Production - Étape 3</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .small-input {
+            width: 100px; /* Ajustez la largeur selon vos besoins */
+        }
+        .info-header {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            width: 1230px;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+
+<div class="container mt-5">
+    <!-- Informations de production -->
+    <div class="info-header row mb-4">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3 info-item">
+            <strong>Secteur</strong>
+            <span>{{ production_instance.secteur }}</span>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3 info-item">
+            <strong>Ligne</strong>
+            <span>{{ production_instance.ligne }}</span>
+        </div>
+        <div class="col-lg_2 col-md-4 col-sm-6 mb-3 info-item">
+            <strong>Équipe</strong>
+            <span>{{ production_instance.equipe }}</span>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3 info-item">
+            <strong>Semaine</strong>
+            <span>{{ production_instance.get_week }}</span>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3 info-item">
+            <strong>Mois</strong>
+            <span>{{ production_instance.get_month }}</span>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3 info-item">
+            <strong>Nbre operateurs</strong>
+            <span>{{ production_instance.nombre_operateur }}</span>
+        </div>
+    </div>
+
+    <div id="message-container" class="mt-4">
+        {% if message %}
+        <div class="alert alert-{{ message_type }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Bouton de Retour -->
+    <a href="{% url 'update-step1' production_instance.id %}" class="btn btn-secondary mb-3">Retour</a>
+
+
+    <form method="POST" id="productionForm">
+        {% csrf_token %}
+        <div class="row">
+            <!-- Info Produit -->
+            <div class="col-md-4">
+                <h4 class="mb3">Info Produit</h4>
+                <div class="form-group">
+                    <label for="id_client">Client:</label>
+                    {{ form.client }}
+                </div>
+                <div class="form-group">
+                    <label for="id_produit">Produit:</label>
+                    {{ form.produit }}
+                </div>
+                <div class="form-group">
+                    <label for="id_face_du_produit">Face du produit:</label>
+                    {{ form.face_du_produit }}
+                </div>
+                <div class="form-group">
+                    <label for="tcm">TCM:</label>
+                    <input type="text" id="tcm" class="form-control small-input" value="" disabled>
+                </div>
+            </div>
+            <!-- Quantité Produit -->
+            <div class="col-md-4">
+                <h4 class="mb-3">Quantité Produit</h4>
+                <div class="form-group">
+                    <label for="id_quantity_fs">Quantité FS:</label>
+                    {{ form.quantity_fs }}
+                </div>
+                <div class="form-group" id="quantity_fc_container" style="display: none;">
+                    <label for="id_quantity_fc">Quantité FC:</label>
+                    {{ form.quantity_fc }}
+                </div>
+                <div class="form-group">
+                    <label for="id_defaults">Defaults:</label>
+                    {{ form.defaults }}
+                </div>
+                <div class="d-flex">
+                    <div class="form-group mr-4">
+                        <label for="fpy">FPY:</label>
+                        <input type="text" id="fpy" class="form-control small-input" value="" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="tuf">TUF:</label>
+                        <div class="d-flex">
+                            <input type="text" id="tuf" class="form-control small-input" value="" disabled>
+                            <small class="text-center ml-1">Heure</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Temps d'ouverture -->
+            <div class="col-md-4">
+                <h4 class="mb-3">Temps d'ouverture</h4>
+                <div class="form-group">
+                    <label for="id_heure_debut">Heure de début:</label>
+                    <select id="id_heure_debut" name="heure_debut" class="form-control">
+                        <!-- Options seront ajoutées dynamiquement -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="id_heure_fin">Heure de fin:</label>
+                    <select id="id_heure_fin" name="heure_fin" class="form-control">
+                        <!-- Options seront ajoutées dynamiquement -->
+                    </select>
+                </div>
+                <div class="form-group row">
+                    <div class="col-sm-6">
+                        <label for="temps_ouverture">Temps d'ouverture:</label>
+                        <div class="d-flex">
+                            <input type="text" id="temps_ouverture" class="form-control small-input" value="" disabled>
+                            <small class="ml-1">Heure</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="trs_cipi">TRS CIPI:</label>
+                        <input type="text" id="trs_cipi" class="form-control small-input" value="" disabled>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="total_arret">Total Arrêt:</label>
+                        <input type="text" id="total_arret" class="form-control small-input" value="" disabled>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary mr-1" id="submitBtn1">Enregistrer</button>
+        <button type="button" class="btn btn-secondary" id="next_btn">Continuer</button>
+    </form>
+</div>
+
+<script>
+    // Fonction pour charger les horaires basés sur l'équipe
+    const updateHoraires = () => {
+        const equipe_id = '{{ equipe_id }}';  // Récupérer l'équipe depuis le backend
+        $.ajax({
+            url: '{% url "load_horaires" %}',
+            data: { 'equipe': equipe_id },
+            success: (data) => {
+                const heureDebut = $('#id_heure_debut');
+                const heureFin = $('#id_heure_fin');
+                heureDebut.empty();
+                heureFin.empty();
+                data.horaires.debut.forEach(heure => {
+                    heureDebut.append(new Option(heure, heure));
+                });
+                data.horaires.fin.forEach(heure => {
+                    heureFin.append(new Option(heure, heure));
+                });
+            }
+        });
+    };
+
+    // Charger les horaires au chargement de la page
+    $(document).ready(updateHoraires);
+
+    // Fonction pour charger les faces du produit basées sur le secteur
+    const updateFaces = () => {
+        const secteur_id = '{{ secteur_id }}';
+        $.ajax({
+            url: '{% url "load-face-produit" %}',
+            data: { 'secteur': secteur_id },
+            success: (data) => {
+                $("#id_face_du_produit").html('');
+                $("#id_face_du_produit").append(new Option('----------', ''));
+                for (var i = 0; i < data.length; i++) {
+                    var option = new Option(data[i].nom, data[i].id);
+                    $("#id_face_du_produit").append($(option));
+                }
+            }
+        });
+    };
+
+    // Charger les faces du produit au chargement de la page
+    $(document).ready(updateFaces);
+
+
+     // Fonction pour charger les faces du produit basées sur le secteur
+    const displayBtnNext = () => {
+        const production_id = '{{ production_instance.id }}';
+        $.ajax({
+            url: '{% url "manage-btn-next" %}',
+            data: { 'production_id': production_id },
+            success: (response) => {
+                if(response.success){
+                    $("#next_btn").show();;
+                }else{
+                    $("#next_btn").hide();
+                }
+
+            }
+        });
+    };
+
+    // Charger les faces du produit au chargement de la page
+    $(document).ready(displayBtnNext);
+
+    // Fonction pour charger le TCM basé sur le secteur, produit et face du produit
+    const updateTCM = () => {
+        const secteur_id = '{{ secteur_id }}';
+        const produit_id = $('#id_produit').val();
+        const face_id = $('#id_face_du_produit').val();
+        if (secteur_id && produit_id && face_id) {
+            $.ajax({
+                url: '{% url "load_tcm" %}',
+                data: {
+                    'secteur_id': secteur_id,
+                    'produit_id': produit_id,
+                    'face_id': face_id
+                },
+                success: (data) => {
+                    if (data.tcm) {
+                        $('#tcm').val(data.tcm);
+                        updateFPYandTUF();
+                    } else {
+                        $('#tcm').val('');
+                    }
+                },
+                error: () => {
+                    $('#tcm').val('');
+                }
+            });
+        } else {
+            $('#tcm').val('');
+        }
+    };
+
+    // Attacher des événements de changement aux sélecteurs de produit, de secteur et de face
+    $('#id_produit').change(updateTCM);
+    $('#id_face_du_produit').change(updateTCM);
+
+    // Logique pour afficher/masquer le champ quantity_fc
+    $(document).ready(function() {
+        const quantityFcContainer = $('#quantity_fc_container');
+        $('#id_face_du_produit').change(function() {
+            const selectedFaceName = $("#id_face_du_produit option:selected").text();
+            if (selectedFaceName === 'DUAL') {
+                quantityFcContainer.show();
+            } else {
+                quantityFcContainer.hide();
+            }
+        });
+    });
+
+    // Fonction pour calculer et mettre à jour FPY et TUF dynamiquement
+    const updateFPYandTUF = () => {
+        const quantityFs = parseInt($('#id_quantity_fs').val()) || 0;
+        const quantityFc = parseInt($('#id_quantity_fc').val()) || 0;
+        const defaults = parseInt($('#id_defaults').val()) || 0;
+        const tcm = parseFloat($('#tcm').val()) || 0;
+        const totalQuantity = quantityFs + quantityFc;
+        const goodProducts = totalQuantity - defaults;
+        const fpy = totalQuantity > 0 ? ((goodProducts / totalQuantity) * 100).toFixed(2) : 0;
+        $('#fpy').val(fpy);
+        const tuf = (tcm * goodProducts) / 3600;
+        $('#tuf').val(tuf.toFixed(2));
+        updateTotalArret();
+    };
+
+    // Attacher des événements de changement aux champs qui influent sur FPY et TUF
+    $('#id_quantity_fs, #id_quantity_fc, #id_defaults').on('input', updateFPYandTUF);
+
+    // Fonction pour calculer et mettre à jour le temps d'ouverture dynamiquement
+    const updateOpeningTime = () => {
+        const heureDebut = $('#id_heure_debut').val();
+        const heureFin = $('#id_heure_fin').val();
+        if (heureDebut && heureFin) {
+            const [debutHour, debutMinute] = heureDebut.split(':').map(Number);
+            const [finHour, finMinute] = heureFin.split(':').map(Number);
+            let totalDebutMinutes = debutHour * 60 + debutMinute;
+            let totalFinMinutes = finHour * 60 + finMinute;
+            if (totalFinMinutes < totalDebutMinutes) {
+                totalFinMinutes += 1440;
+            }
+            const totalMinutes = totalFinMinutes - totalDebutMinutes;
+            const openingTime = totalMinutes / 60;
+            $('#temps_ouverture').val(openingTime.toFixed(2));
+        } else {
+            $('#temps_ouverture').val('0.00');
+        }
+        updateTotalArret();
+    };
+
+    // Attacher des événements de changement aux sélecteurs d'heures
+    $('#id_heure_debut, #id_heure_fin').change(updateOpeningTime);
+
+    // Initialiser le temps d'ouverture au chargement de la page
+    $(document).ready(() => {
+        updateOpeningTime();
+    });
+
+    // Fonction pour calculer et mettre à jour le Total Arrêt dynamiquement
+    const updateTotalArret = () => {
+        const tempsOuverture = parseFloat($('#temps_ouverture').val()) || 0;
+        const tuf = parseFloat($('#tuf').val()) || 0;
+        const totalArret = tempsOuverture - tuf;
+        $('#total_arret').val(totalArret.toFixed(2));
+    };
+
+    // Initialiser le Total Arrêt au chargement de la page
+    $(document).ready(() => {
+        updateTotalArret();
+    });
+
+    // Événement pour le bouton Soumettre
+    $('#submitBtn1').click(function(e) {
+        e.preventDefault();  // Empêcher le formulaire de se soumettre normalement
+        $.ajax({
+            type: 'POST',
+            url: '{% url "step2" %}',
+            data: $('#productionForm').serialize(),
+            success: function(response) {
+                if (response.success) {
+                    $('#message-container').html(
+                        '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                        response.success +
+                        '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
+                        '<span aria-hidden="true">&times;</span>' +
+                        '</button>' +
+                        '</div>'
+                    );
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    $('#message-container').html(
+                        '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                        response.error +
+                        '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
+                        '<span aria-hidden="true">&times;</span>' +
+                        '</button>' +
+                        '</div>'
+                    );
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#message-container').html(
+                    '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                    'Une erreur s\'est produite lors de la requête.' +
+                    '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
+                    '<span aria-hidden="true">&times;</span>' +
+                    '</button>' +
+                    '</div>'
+                );
+                console.error(error);
+            }
+        });
+    });
+
+    // Événement pour le bouton Retour
+    $('#next_btn').click(function() {
+        window.location.href = "{% url 'step3' %}";
+    });
+</script>
+
+</body>
+</html>
