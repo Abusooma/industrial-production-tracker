@@ -1,10 +1,268 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indicateur de Productivité Hebdo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .box {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .chart {
+            height: 300px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
-$END$
+<div class="container">
+    <h1>Indicateur de Productivité Hebdo</h1>
+    <div class="grid">
+        <div class="box">
+            <h2>Données Générales</h2>
+            <div class="metric">
+                <span>Taux de Rendement Synthétique (TRS)</span>
+                <span>{{ trs|floatformat:1 }}%</span>
+            </div>
+            <div class="metric">
+                <span>Taux de Rendement Global (TRG)</span>
+                <span>{{ trg|floatformat:1 }}%</span>
+            </div>
+            <div class="metric">
+                <span>Taux de qualité</span>
+                <span>98.9%</span>
+            </div>
+            <div class="metric">
+                <span>Taux de Rendement Economique (TRE)</span>
+                <span>15%</span>
+            </div>
+            <div class="metric">
+                <span>Taux de performance</span>
+                <span>82.4%</span>
+            </div>
+            <div class="metric">
+                <span>Disponibilité Opérationnelle</span>
+                <span>54.7%</span>
+            </div>
+            <div class="metric">
+                <span>Taux de charge</span>
+                <span>49.6%</span>
+            </div>
+            <div class="metric">
+                <span>Taux stratégique d'engagement</span>
+                <span>66.7%</span>
+            </div>
+        </div>
+        <div class="box">
+            <h2>Temps de Production</h2>
+            <div class="metric">
+                <span>Temps Utile (TU)</span>
+                <span>{{ tu|floatformat:1 }} Heures</span>
+            </div>
+            <div class="metric">
+                <span>Temps d'Ouverture (TO)</span>
+                <span>{{ to|floatformat:1 }} Heures</span>
+            </div>
+            <div class="metric">
+                <span>Ecart de cadence</span>
+                <span>{{ ecart_cadence|floatformat:1 }} Heures</span>
+            </div>
+            <div class="metric">
+                <span>Désengagement des moyens</span>
+                <span>{{ desengagement|floatformat:1 }} Heures</span>
+            </div>
+            <div class="metric">
+                <span>Arrêts Propres</span>
+                <span>{{ arrets_propres|floatformat:1 }} Heures</span>
+            </div>
+            <div class="metric">
+                <span>Arrêts Induits</span>
+                <span>{{ arrets_induits|floatformat:1 }} Heures</span>
+            </div>
+            <div class="metric">
+                <span>Non qualité</span>
+                <span>{{ non_qualite|floatformat:1 }} Heures</span>
+            </div>
+            <div class="metric">
+                <span>Temps Requis</span>
+                <span>{{ temps_requis|floatformat:1 }} Heures</span>
+            </div>
+        </div>
+    </div>
+    <div class="grid">
+        <div class="box">
+            <h2>Désengagement des Moyens (Heures)</h2>
+            <canvas id="desengagementChart" class="chart"></canvas>
+        </div>
+        <div class="box">
+            <h2>Les Arrêts Induits (Heures)</h2>
+            <canvas id="arretsInduitsChart" class="chart"></canvas>
+        </div>
+    </div>
+    <div class="grid">
+        <div class="box">
+            <h2>Les Arrêts Propres (Heures)</h2>
+            <canvas id="arretsPropresChart" class="chart"></canvas>
+        </div>
+        <div class="box">
+            <h2>Pareto des pannes par Equipement (Heures)</h2>
+            <canvas id="pannesEquipementChart" class="chart"></canvas>
+        </div>
+    </div>
+    <div class="box">
+        <h2>Historique TRS CMS LIGNE 6.1</h2>
+        <canvas id="historiqueChart" class="chart"></canvas>
+    </div>
+    <div class="box">
+        <h2>Taux d'effectif</h2>
+        <canvas id="tauxEffectifChart" class="chart"></canvas>
+    </div>
+</div>
+
+<script>
+    // Fonction pour créer un graphique en barres
+    function createBarChart(canvasId, labels, data, title) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: title,
+                    data: data,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+
+    // Création des graphiques
+    createBarChart('desengagementChart',
+        ['Essais / Validation', 'Maintenance Préventive Hebdo', 'Sous charge-Ligne fermée'],
+        [0.6, 4.0, 51.8],
+        'Désengagement des Moyens'
+    );
+
+    createBarChart('arretsInduitsChart',
+        ['Traçabilité Panacim'],
+        [0.3],
+        'Arrêts Induits'
+    );
+
+    createBarChart('arretsPropresChart',
+        ['Pb Qualité VAGUE', 'Démarrage et Mise au Point', 'Changement de Série', 'Réglage/mise au point', 'Pannes CMS'],
+        [1.6, 2.0, 2.1, 4.1, 12.8],
+        'Arrêts Propres'
+    );
+
+    createBarChart('pannesEquipementChart',
+        ['SPI CYBEROPTICS SE500', 'AOI VI 7K_SPECTRO', 'FEEDERS NPM', 'RFS BTU PYRAMAX150N DLDS', 'RPT NPM-W 5'],
+        [0.6, 1.1, 1.6, 3.6, 3.7],
+        'Pareto des pannes par Equipement'
+    );
+
+    // Graphique de l'historique TRS
+    const ctxHistorique = document.getElementById('historiqueChart').getContext('2d');
+    new Chart(ctxHistorique, {
+        type: 'line',
+        data: {
+            labels: ['2422', '2423', '2424', '2425', '2426'],
+            datasets: [{
+                label: 'TRS (%)',
+                data: [42, 45, 36, 41, 49],
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    // Graphique du taux d'effectif
+    const ctxEffectif = document.getElementById('tauxEffectifChart').getContext('2d');
+    new Chart(ctxEffectif, {
+        type: 'bar',
+        data: {
+            labels: ['03/06/2024', '04/06/2024', '05/06/2024', '06/06/2024', '07/06/2024'],
+            datasets: [{
+                label: 'Taux d\'effectif',
+                data: [6, 8, 10, 9, 7],
+                backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
 </body>
 </html>

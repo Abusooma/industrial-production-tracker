@@ -1,4 +1,3 @@
-<!-- saisir_temps_de_cycle.html -->
 {% extends 'main.html' %}
 
 {% block title %}Saisir Temps de Cycle{% endblock %}
@@ -14,14 +13,49 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card shadow">
-                <div class="card-header btn-customer text-white">
+                <div class="card-header text-dark">
                     <h4 class="mb-0">Saisir Temps de Cycle</h4>
                 </div>
                 <div class="card-body">
                     <form id="tempsDeCycleForm">
                         {% csrf_token %}
-                        {{ form.as_p }}
-                        <div class="d-grid">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.secteur.label_tag }}
+                                {{ form.secteur }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.client.label_tag }}
+                                {{ form.client }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.produit.label_tag }}
+                                {{ form.produit }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.face.label_tag }}
+                                {{ form.face }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.equipement_menant.label_tag }}
+                                {{ form.equipement_menant }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.tcm.label_tag }}
+                                {{ form.tcm }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                {{ form.commentaire.label_tag }}
+                                {{ form.commentaire }}
+                            </div>
+                        </div>
+                        <div class="d-grid mt-3">
                             <button type="submit" class="btn btn-customer">Enregistrer</button>
                         </div>
                     </form>
@@ -30,66 +64,129 @@
         </div>
         <div class="col-md-4">
             <div class="card shadow">
-                <div class="card-header btn-customer text-white">
-                    <h4 class="mb-0">Liste des Temps de Cycle</h4>
+                <div class="card-header text-dark">
+                    <h4 class="mb-0">Ajouter des éléments</h4>
                 </div>
                 <div class="card-body">
-                    <ul id="tempsDeCycleList" class="list-group">
-                        {% for tdc in temps_de_cycles %}
-                        <li class="list-group-item">{{ tdc.produit }} - {{ tdc.face }} - {{ tdc.tcm }}</li>
-                        {% endfor %}
-                    </ul>
-                    {% if temps_de_cycles|length >= 5 %}
-                    <button id="loadMore" class="btn btn-customer mt-3">Afficher plus</button>
-                    {% endif %}
+                    {% include 'partials/produit_form.html' %}
+                    {% include 'partials/ligne_form.html' %}
+                    {% include 'partials/secteur_form.html' %}
+                    {% include 'partials/client_form.html' %}
+                    {% include 'partials/equipe_form.html' %}
+                    {% include 'partials/arret_form.html' %}
+                    {% include 'partials/subtype_arret_form.html' %}
+                    {% include 'partials/detail_subtype_arret_form.html' %}
+                    {% include 'partials/moyen_form.html' %}
                 </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
 {% block extra_scripts %}
 <script>
     $(document).ready(function() {
-        $('#tempsDeCycleForm').on('submit', function(e) {
+    function updateSelectOptions(selectId, newEntry) {
+        var select = document.getElementById(selectId);
+        var option = document.createElement('option');
+        option.value = newEntry.pk;
+        option.text = newEntry.fields.nom || newEntry.fields.code_ac || newEntry.fields.description;
+        select.add(option);
+    }
+
+    function validateForm(form) {
+        var isValid = true;
+        form.find('input[required], select[required], textarea[required]').each(function() {
+            if ($(this).val().trim() === '') {
+                isValid = false;
+                $(this).addClass('is-invalid');
+                if (!$(this).next('.invalid-feedback').length) {
+                    $(this).after('<div class="invalid-feedback">Ce champ est requis.</div>');
+                }
+            } else {
+                $(this).removeClass('is-invalid');
+                $(this).next('.invalid-feedback').remove();
+            }
+        });
+        return isValid;
+    }
+
+    function handleFormSubmit(formSelector, url, updateSelectId) {
+        $(formSelector).on('submit', function(e) {
             e.preventDefault();
-            var formData = $(this).serialize();
+            var form = $(this);
+
+            if (!validateForm(form)) {
+                $('#message').removeClass('alert-success').addClass('alert alert-danger')
+                    .text('Veuillez remplir tous les champs obligatoires.');
+                return;
+            }
+
+            var formData = form.serialize();
             $.ajax({
                 type: 'POST',
-                url: '{% url "saisir_temps_de_cycle" %}',
+                url: url,
                 data: formData,
                 success: function(response) {
                     $('#message').removeClass('alert-success alert-danger');
                     if (response.success) {
                         $('#message').addClass('alert alert-success').text(response.message);
-                        var new_entry = JSON.parse(response.new_entry)[0].fields;
-                        $('#tempsDeCycleList').prepend('<li class="list-group-item">' + new_entry.produit + ' - ' + new_entry.face + ' - ' + new_entry.tcm + '</li>');
-                        $('#tempsDeCycleForm')[0].reset();
+                        form[0].reset();
+                        toggleForm(formSelector);
+
+                        if (response.new_entry) {
+                            var newEntry = JSON.parse(response.new_entry)[0];
+                            updateSelectOptions(updateSelectId, newEntry);
+                        }
                     } else {
                         $('#message').addClass('alert alert-danger').text(response.message);
                     }
-                }
-            });
-        });
-
-        var offset = 5;
-        $('#loadMore').on('click', function() {
-            $.ajax({
-                type: 'GET',
-                url: '{% url "load_more_temps_de_cycles" %}',
-                data: {
-                    offset: offset
                 },
-                success: function(response) {
-                    var temps_de_cycles = JSON.parse(response.temps_de_cycles);
-                    $.each(temps_de_cycles, function(index, tdc) {
-                        var fields = tdc.fields;
-                        $('#tempsDeCycleList').append('<li class="list-group-item">' + fields.produit + ' - ' + fields.face + ' - ' + fields.tcm + '</li>');
-                    });
-                    offset += temps_de_cycles.length;
+                error: function(xhr, status, error) {
+                    $('#message').removeClass('alert-success').addClass('alert alert-danger')
+                        .text('Une erreur est survenue. Veuillez réessayer.');
                 }
             });
         });
+    }
+
+    function toggleForm(formSelector) {
+        var form = $(formSelector);
+        var cardHeader = form.closest('.card').find('.card-header');
+        var addButton = cardHeader.find('.add-button');
+        var cancelButton = cardHeader.find('.cancel-button');
+
+        form.toggleClass('d-none');
+        addButton.toggleClass('d-none');
+        cancelButton.toggleClass('d-none');
+    }
+
+    // Gestionnaire d'événements pour les boutons "Ajouter" et "Annuler"
+    $('.add-button, .cancel-button').on('click', function() {
+        var formSelector = '#' + $(this).data('target');
+        toggleForm(formSelector);
+
+        if ($(this).hasClass('cancel-button')) {
+            // Réinitialiser le formulaire
+            $(formSelector)[0].reset();
+            // Supprimer les messages d'erreur
+            $(formSelector + ' .is-invalid').removeClass('is-invalid');
+            $(formSelector + ' .invalid-feedback').remove();
+        }
     });
+
+    // Mise à jour des appels de fonction pour la gestion des formulaires
+    handleFormSubmit('#tempsDeCycleForm', '{% url "saisir_temps_de_cycle" %}');
+    handleFormSubmit('#produitFormInner', '{% url "ajouter_produit" %}', 'id_produit');
+    handleFormSubmit('#ligneFormInner', '{% url "ajouter_ligne" %}', 'id_ligne');
+    handleFormSubmit('#secteurFormInner', '{% url "ajouter_secteur" %}', 'id_secteur');
+    handleFormSubmit('#clientFormInner', '{% url "ajouter_client" %}', 'id_client');
+    handleFormSubmit('#equipeFormInner', '{% url "ajouter_equipe" %}', 'id_equipe');
+    handleFormSubmit('#arretFormInner', '{% url "ajouter_arret" %}', 'id_arret');
+    handleFormSubmit('#subtypeArretFormInner', '{% url "ajouter_subtype_arret" %}', 'id_subtype_arret');
+    handleFormSubmit('#detailSubtypeArretFormInner', '{% url "ajouter_detail_subtype_arret" %}', 'id_detail_subtype_arret');
+    handleFormSubmit('#moyenFormInner', '{% url "ajouter_moyen" %}', 'id_moyen');
+});
 </script>
 {% endblock %}

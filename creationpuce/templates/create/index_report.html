@@ -1,10 +1,100 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'main.html' %}
+
+{% block title %}Administration{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header text-dark">
+                    <h4 class="mb-0">Aperçu et Impression des rapports</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-chart-line"></i> Aperçu Journalier par Ligne
+                                    </h5>
+                                    <button class="btn btn2-customer" onclick="showForm('daily_line')">
+                                        Sélectionner
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-calendar-week"></i> Aperçu Hebdomadaire par Ligne
+                                    </h5>
+                                    <button class="btn btn2-customer" onclick="showForm('weekly_line')">
+                                        Sélectionner
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-calendar-alt"></i> Aperçu Hebdomadaire par Secteur
+                                    </h5>
+                                    <button class="btn btn2-customer" onclick="showForm('weekly_sector')">
+                                        Sélectionner
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-calendar"></i> Aperçu Mensuel par Secteur
+                                    </h5>
+                                    <button class="btn btn2-customer" onclick="showForm('monthly_sector')">
+                                        Sélectionner
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="form-container" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentReportType = '';
+
+    function showForm(reportType) {
+        currentReportType = reportType;
+        let formContainer = document.getElementById('form-container');
+        fetch(`/generate_report_form/${reportType}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            formContainer.innerHTML = data.form_html;
+        });
+    }
+
+    function setFormAction() {
+        let form = document.querySelector('form');
+        if (currentReportType === 'daily_line') {
+            form.action = "{% url 'generate_daily_line_pdf' %}";
+        } else if (currentReportType === 'weekly_line') {
+            form.action = "{% url 'generate_weekly_line_pdf' %}";
+        }
+        // Ajouter d'autres conditions pour les autres types de rapports si nécessaire
+    }
+</script>
+{% endblock %}

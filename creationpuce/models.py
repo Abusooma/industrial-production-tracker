@@ -9,7 +9,7 @@ class Secteur(models.Model):
     nom_secteur = models.CharField(max_length=200)
 
     def __str__(self):
-        return self.nom_secteur
+        return self.nom_secteur if self.nom_secteur else "N/A"
 
 
 # TABLE LIGNE
@@ -59,7 +59,7 @@ class Moyen(models.Model):
     heure_fin = models.TimeField()  # Temps de fin d'opération
 
     def __str__(self):
-        return self.nom
+        return self.nom if self.nom else "N/A"
 
 
 # TABLE L'EQUIPE
@@ -86,7 +86,7 @@ class FaceProduit(models.Model):
     nom = models.CharField(max_length=25)
 
     def __str__(self):
-        return self.nom
+        return self.nom if self.nom else "N/A"
 
 
 # TABLE PRODUIT
@@ -94,14 +94,14 @@ class Produit(models.Model):
     code_ac = models.CharField(max_length=15, blank=True, null=True)
 
     def __str__(self):
-        return self.code_ac
+        return self.code_ac if self.code_ac else "N/A"
 
 
 class Client(models.Model):
     nom = models.CharField(max_length=155)
 
     def __str__(self):
-        return self.nom
+        return self.nom if self.nom else "N/A"
 
 
 class Production(models.Model):
@@ -125,60 +125,60 @@ class Production(models.Model):
         return format_date(self.date_production, format='MMMM', locale='fr')
 
     def sum_temps_ouverture(self):
-        return sum(step.temps_ouverture() for step in self.productionsteptwo_set.all())
+        return sum(step.temps_ouverture() or 0 for step in self.productionsteptwo_set.all())
 
     def sum_non_qualite(self):
-        return sum(step.non_quality() for step in self.productionsteptwo_set.all())
+        return sum(step.non_quality() or 0 for step in self.productionsteptwo_set.all())
 
     def sum_desengagement(self):
         return sum(
-            arret.duree_en_heure + (arret.duree_en_minute or 0) / 60
+            (arret.duree_en_heure or 0) + (arret.duree_en_minute or 0) / 60
             for arret in self.arretdeproduction_set.filter(type_arret__nom__icontains="engagement")
         )
 
     def sum_arret_propre(self):
         return sum(
-            arret.duree_en_heure + (arret.duree_en_minute or 0) / 60
+            (arret.duree_en_heure or 0) + (arret.duree_en_minute or 0) / 60
             for arret in self.arretdeproduction_set.filter(type_arret__nom__icontains="propre")
         )
 
     def sum_arret_induit(self):
         return sum(
-            arret.duree_en_heure + (arret.duree_en_minute or 0) / 60
+            (arret.duree_en_heure or 0) + (arret.duree_en_minute or 0) / 60
             for arret in self.arretdeproduction_set.filter(type_arret__nom__icontains="induit")
         )
 
     def sum_all_arrets(self):
         return sum(
-            arret.duree_en_heure + (arret.duree_en_minute or 0) / 60
+            (arret.duree_en_heure or 0) + (arret.duree_en_minute or 0) / 60
             for arret in self.arretdeproduction_set.all()
         )
 
     def calculate_tr(self):
-        return self.sum_temps_ouverture() - self.sum_desengagement()
+        return max(0, self.sum_temps_ouverture() - self.sum_desengagement())
 
     def calculate_tf(self, tr):
-        return tr - (self.sum_arret_propre() + self.sum_arret_induit())
+        return max(0, tr - (self.sum_arret_propre() + self.sum_arret_induit()))
 
     def calculate_ecart_de_cadence(self, tf):
-        return self.sum_temps_ouverture() - (tf - self.sum_all_arrets())
+        return max(0, self.sum_temps_ouverture() - (tf - self.sum_all_arrets()))
 
     def calculate_tn(self, tf, ecart_de_cadence):
-        return tf - ecart_de_cadence
+        return max(0, tf - ecart_de_cadence)
 
     def calculate_tu(self):
         tr = self.calculate_tr()
         tf = self.calculate_tf(tr)
         ecart_de_cadence = self.calculate_ecart_de_cadence(tf)
         tn = self.calculate_tn(tf, ecart_de_cadence)
-        return tn - self.sum_non_qualite()
+        return max(0, tn - self.sum_non_qualite())
 
     def calculate_trs(self):
         tr = self.calculate_tr()
         tu = self.calculate_tu()
         if tr == 0:
             return 0
-        return (tu / tr) * 100
+        return min(100, (tu / tr) * 100)  # Assurez-vous que TRS ne dépasse pas 100%
 
 
 class Intervenant(models.Model):
@@ -193,7 +193,7 @@ class Changement(models.Model):
     detail_type_arret = models.ForeignKey(DetailSubTypeArret, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.description} - {self.detail_type_arret.description}"
+        return f"{self.description}"
 
 
 class ProductionStepTwo(models.Model):
@@ -289,20 +289,28 @@ class TempsDeCycle(models.Model):
     commentaire = models.CharField(max_length=155, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.produit} - {self.face} - {self.tcm}"
+        produit_str = str(self.produit) if self.produit else "N/A"
+        face_str = str(self.face) if self.face else "N/A"
+        tcm_str = str(self.tcm) if self.tcm else "N/A"
+
+        return f"{produit_str} - {face_str} - {tcm_str}"
 
 
 class ObjectifChangeOver(models.Model):
     secteur = models.ForeignKey(Secteur, on_delete=models.CASCADE)
     ligne = models.ForeignKey(Ligne, on_delete=models.CASCADE)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
-    # produit = models.ForeignKey(Produit, on_delete=models.CASCADE)
-    # face = models.ForeignKey(FaceProduit, on_delete=models.CASCADE)
-    changement_produit_commun = models.FloatField()
-    changement_version = models.FloatField()
-    changement_produit_specifique = models.FloatField()
-    changement_face = models.FloatField()
-    commentaire = models.CharField(max_length=155)
+    produit = models.ForeignKey(Produit, on_delete=models.CASCADE, null=True)
+    face_du_produit = models.ForeignKey(FaceProduit, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return self.client
+        return f"Objective ChangeOver : ID: {self.pk} - Produit : {self.produit.code_ac} - Famille : {self.client.nom}"
+
+
+class TypeDeChangementDeObjectif(models.Model):
+    objectif = models.ForeignKey(ObjectifChangeOver, on_delete=models.CASCADE, related_name='values')
+    changement = models.ForeignKey(Changement, on_delete=models.CASCADE)
+    valeur = models.FloatField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.changement.description} - {self.objectif.id}"

@@ -1,6 +1,99 @@
 from django import forms
+from datetime import datetime, date
 from .models import Ligne, Production, SubTypeArret, DetailSubTypeArret, ArretDeProduction, FaceProduit, \
-    ProductionStepTwo, Moyen, TempsDeCycle
+    ProductionStepTwo, Moyen, TempsDeCycle, ObjectifChangeOver, TypeDeChangementDeObjectif, Produit, Client, Equipe, \
+    Secteur, Arret
+
+
+class ProduitForm(forms.ModelForm):
+    class Meta:
+        model = Produit
+        fields = ['code_ac']
+        widgets = {
+            'code_ac': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class SecteurForm(forms.ModelForm):
+    class Meta:
+        model = Secteur
+        fields = ['nom_secteur']
+        widgets = {
+            'nom_secteur': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class LigneForm(forms.ModelForm):
+    class Meta:
+        model = Ligne
+        fields = ['secteur', 'nom']
+        widgets = {
+            'secteur': forms.Select(attrs={'class': 'form-control'}),
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class ArretSimpleForm(forms.ModelForm):
+    class Meta:
+        model = Arret
+        fields = ['nom', 'commentaire', 'heure_et_minute']
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'commentaire': forms.Textarea(attrs={'class': 'form-control'}),
+            'heure_et_minute': forms.TimeInput(attrs={'class': 'form-control'}),
+        }
+
+
+class ClientForm(forms.ModelForm):
+    class Meta:
+        model = Client
+        fields = ['nom']
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class EquipeForm(forms.ModelForm):
+    class Meta:
+        model = Equipe
+        fields = ['nom']
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class MoyenForm(forms.ModelForm):
+    class Meta:
+        model = Moyen
+        fields = ['ligne', 'subtype_arret', 'nom', 'heure_debut', 'heure_fin']
+        widgets = {
+            'ligne': forms.Select(attrs={'class': 'form-control'}),
+            'subtype_arret': forms.Select(attrs={'class': 'form-control'}),
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'heure_debut': forms.TimeInput(attrs={'class': 'form-control'}),
+            'heure_fin': forms.TimeInput(attrs={'class': 'form-control'}),
+        }
+
+
+class SubTypeArretForm(forms.ModelForm):
+    class Meta:
+        model = SubTypeArret
+        fields = ['arret', 'description']
+        widgets = {
+            'arret': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class DetailSubTypeArretForm(forms.ModelForm):
+    class Meta:
+        model = DetailSubTypeArret
+        fields = ['arret', 'sub_type_arret', 'description']
+        widgets = {
+            'arret': forms.Select(attrs={'class': 'form-control'}),
+            'sub_type_arret': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
 
 class ProduitCreationForm(forms.ModelForm):
@@ -147,3 +240,113 @@ class TempsDeCycleForm(forms.ModelForm):
             'tcm': forms.NumberInput(attrs={'class': 'form-control'}),
             'commentaire': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+
+class ObjectifChangeOverForm(forms.ModelForm):
+    class Meta:
+        model = ObjectifChangeOver
+        fields = '__all__'
+        widgets = {
+            'secteur': forms.Select(attrs={'class': 'form-control'}),
+            'ligne': forms.Select(attrs={'class': 'form-control'}),
+            'client': forms.Select(attrs={'class': 'form-control'}),
+            'produit': forms.Select(attrs={'class': 'form-control'}),
+            'face_du_produit': forms.Select(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'secteur': 'Secteur',
+            'ligne': 'Ligne',
+            'client': 'Client',
+            'produit': 'Produit',
+            'face_du_produit': 'Face du produit',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if 'secteur' in self.data:
+            try:
+                secteur_id = int(self.data.get('secteur'))
+                self.fields['face_du_produit'].queryset = FaceProduit.objects.filter(secteur_id=secteur_id).order_by(
+                    'nom')
+                self.fields['ligne'].queryset = Ligne.objects.filter(secteur_id=secteur_id).order_by('nom')
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk:
+            self.fields['face_du_produit'].queryset = self.instance.secteur.faceproduit_set.order_by('nom')
+            self.fields['ligne'].queryset = self.instance.secteur.ligne_set.order_by('nom')
+
+        else:
+            self.fields['face_du_produit'].queryset = FaceProduit.objects.none()
+            self.fields['ligne'].queryset = Ligne.objects.none()
+
+
+class TypeDeChangementDeObjectifForm(forms.ModelForm):
+    class Meta:
+        model = TypeDeChangementDeObjectif
+        fields = ['changement', 'valeur']
+        widgets = {
+            'changement': forms.Select(attrs={'class': 'form-control'}),
+            'valeur': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'changement': '',
+            'valeur': 'Valeur',
+        }
+
+
+class CustomDateField(forms.CharField):
+    def __init__(self, *args, **kwargs):
+        self.date_format = kwargs.pop('date_format', '%Y-%m-%d')
+        super().__init__(*args, **kwargs)
+
+    def clean(self, value):
+        if not value:
+            return None
+        try:
+            if self.date_format == '%Y-%W':
+                # Pour le format semaine
+                year, week = map(int, value.split('-'))
+                return date.fromisocalendar(year, week, 1)
+            elif self.date_format == '%Y-%m':
+                # Pour le format mois
+                return datetime.strptime(value + '-01', '%Y-%m-%d').date()
+            else:
+                # Pour le format jour
+                return datetime.strptime(value, self.date_format).date()
+        except ValueError:
+            raise forms.ValidationError('Format de date invalide.')
+
+
+class ReportForm(forms.Form):
+    ligne = forms.ModelChoiceField(
+        queryset=Ligne.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control custom-select',
+            'style': 'border: 2px solid #33333333; border-radius: 0.25rem; padding: 0.5rem;'
+        })
+    )
+    secteur = forms.ModelChoiceField(
+        queryset=Secteur.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control custom-select',
+            'style': 'border: 2px solid #33333333; border-radius: 0.25rem; padding: 0.5rem;'
+        })
+    )
+    date = CustomDateField(
+        widget=forms.Select(attrs={
+            'class': 'form-control custom-date',
+            'style': 'border: 2px solid #33333333; border-radius: 0.25rem; padding: 0.5rem;'
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.report_type = kwargs.pop('report_type', None)
+        super().__init__(*args, **kwargs)
+        if self.report_type:
+            if self.report_type in ['weekly_line', 'weekly_sector']:
+                self.fields['date'].date_format = '%Y-%W'
+            elif self.report_type == 'monthly_sector':
+                self.fields['date'].date_format = '%Y-%m'

@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}My Application{% endblock %}</title>
+    <title>{% block title %}My Application - {% endblock %}</title>
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <!-- jQuery UI CSS -->
@@ -47,7 +47,8 @@
 <div class="sidebar">
     <a href="{% url 'step1' %}" class="sidebar-link"><i class="fas fa-database"></i>SAISIE DES DONNÉES FG85</a>
     <a href="{% url 'admin-menu' %}" class="sidebar-link"><i class="fas fa-user-cog"></i>ADMINISTRATION</a>
-    <a href="#" class="sidebar-link"><i class="fas fa-print"></i>APERÇUS ET IMPRESSIONS DES RAPPORTS</a>
+    <a href="{% url 'index_report' %}" class="sidebar-link"><i class="fas fa-print"></i>APERÇUS ET IMPRESSIONS DES
+        RAPPORTS</a>
 </div>
 
 

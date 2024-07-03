@@ -1,10 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+<div class="card shadow mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <p class="mb-0">Moyen</p>
+        <button class="btn btn-success add-button" data-target="moyenFormInner">
+            Ajouter
+        </button>
+        <button class="btn btn-secondary cancel-button d-none" data-target="moyenFormInner">
+            Annuler
+        </button>
+    </div>
+
+    <div class="card-body">
+        <form id="moyenFormInner" class="d-none">
+            {% csrf_token %}
+            {{ moyen_form.as_p }}
+            <button type="submit" class="btn btn-success mt-2">Ajouter</button>
+        </form>
+    </div>
+</div>

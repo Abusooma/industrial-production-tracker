@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Secteur, Ligne, Arret, SubTypeArret, DetailSubTypeArret, Moyen, Equipe, PlageDeTravail, Produit, \
-    Production, Client, ArretDeProduction, FaceProduit, TempsDeCycle, Intervenant, Changement, ProductionStepTwo
+    Production, Client, ArretDeProduction, FaceProduit, TempsDeCycle, Intervenant, Changement, ProductionStepTwo, \
+    TypeDeChangementDeObjectif, ObjectifChangeOver
 
 admin.site.register(Secteur)
 admin.site.register(Ligne)
@@ -19,3 +20,5 @@ admin.site.register(TempsDeCycle)
 admin.site.register(Intervenant)
 admin.site.register(Changement)
 admin.site.register(ProductionStepTwo)
+admin.site.register(TypeDeChangementDeObjectif)
+admin.site.register(ObjectifChangeOver)

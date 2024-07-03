@@ -1,10 +1,174 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'main.html' %}
+
+{% block title %}Saisir l'Objective ChangeOver{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header text-dark">
+                    <h4 class="mb-0">Saisir l'Objective ChangeOver</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ objectif_form.as_p }}
+                            {% for error in objectif_form.non_field_errors %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3" id="formset-container">
+                            {{ formset.management_form }}
+                            {% for form in formset %}
+                            <div class="form-row align-items-end mb-3 formset-form">
+                                <div class="col-md-6">
+                                    <div class="row">
+                                        <div class="col-1">
+                                            {{ form.changement.label_tag }}
+                                        </div>
+                                        <div class="col-11">
+                                            {{ form.changement }}
+                                        </div>
+                                        {% for error in form.changement.errors %}
+                                        <div class="alert alert-danger">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-5 d-flex">
+                                    <div class="ml-1 mr-1 mt-2">
+                                        {{ form.valeur.label_tag }}
+                                    </div>
+                                    <div>
+                                        {{ form.valeur }}
+                                    </div>
+                                    {% for error in form.valeur.errors %}
+                                    <div class="alert alert-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-2">
+                                    {% if form.instance.pk %}
+                                    <button type="button" class="btn btn-danger remove-form">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-customer">Enregistrer</button>
+                        </div>
+                    </form>
+                    <div style="position: absolute; right:480px; bottom:20px;">
+                        <button class="btn btn-secondary" id="backBtn">Annuler</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    $(document).ready(function() {
+        // Fonction pour charger les lignes en fonction du secteur sélectionné
+        $("#id_secteur").change(function() {
+            var secteurId = $(this).val();
+            if (secteurId) {
+                $.ajax({
+                    url: "{% url 'load_lignes' %}",
+                    data: {
+                        'secteur': secteurId
+                    },
+                    success: function(data) {
+                        $("#id_ligne").html('');
+                        $("#id_ligne").append(new Option('---------', ''));
+                        data.forEach(function(item) {
+                            var option = new Option(item.nom, item.id);
+                            $("#id_ligne").append(option);
+                        });
+                    }
+                });
+            } else {
+                $("#id_ligne").html('');
+            }
+        });
+
+        // Déclenche le changement si un secteur est déjà sélectionné
+        if ($("#id_secteur").val()) {
+            $("#id_secteur").trigger('change');
+        }
+
+        // Fonction pour charger les faces du produit en fonction du secteur sélectionné
+        $("#id_secteur").change(function() {
+            var secteur_id = $(this).val();
+            if (secteur_id) {
+                $.ajax({
+                    url: "{% url 'load-face-produit' %}",
+                    data: {
+                        'secteur': secteur_id
+                    },
+                    success: function(data) {
+                        $("#id_face_du_produit").html('');
+                        $("#id_face_du_produit").append(new Option('----------', ''));
+                        data.forEach(function(item) {
+                            var option = new Option(item.nom, item.id);
+                            $("#id_face_du_produit").append(option);
+                        });
+                    }
+                });
+            } else {
+                $("#id_face_du_produit").html('');
+            }
+        });
+
+        // Déclenche le changement si un secteur est déjà sélectionné (évite les doublons)
+        if ($("#id_secteur").val()) {
+            $("#id_secteur").trigger('change');
+        }
+
+        $('#objectif-changeover-form').submit(function (e) {
+            let isValid = true;
+            $('.formset-form').each(function () {
+                let changement = $(this).find('select[name*="changement"]').val();
+                let valeur = $(this).find('input[name*="valeur"]').val();
+
+                if (changement === '' || valeur === '') {
+                    isValid = false;
+                    $(this).find('select[name*="changement"], input[name*="valeur"]').each(function () {
+                        if ($(this).val() === '') {
+                            $(this).addClass('is-invalid');
+                        } else {
+                            $(this).removeClass('is-invalid');
+                        }
+                    });
+                } else {
+                    $(this).find('select[name*="changement"], input[name*="valeur"]').removeClass('is-invalid');
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                alert("Tous les champs doivent être remplis avant de soumettre le formulaire.");
+            }
+        });
+        document.getElementById('backBtn').addEventListener('click', function() {
+            window.history.back();
+        });
+    });
+</script>
+
+{% endblock %}

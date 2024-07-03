@@ -110,6 +110,19 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Champs non saisissables ajoutés ici -->
+                    <div class="form-group row" id="id_obi_container" style="display: none;">
+                        <div class="col-sm-12 d-flex justify-content-end align-items-center">
+                            <label class="mr-2 mb-0" style="width: 50px;">Obi</label>
+                            <input type="text" class="form-control form-control-sm mr-3" id="obi_value" readonly
+                                   style="width: 80px;">
+                            <label class="mr-2 mb-0" style="width: 120px; font-size: 12px;">Temps de dépassement</label>
+                            <input type="text" class="form-control form-control-sm" id="temps_depassement" readonly
+                                   style="width: 80px;">
+                        </div>
+                    </div>
+                    <!-- ... -->
                     <div class="form-group row" id="id_action_container">
                         <label for="id_action" class="col-sm-4 col-form-label">{{ form.action.label_tag }}</label>
                         <div class="col-sm-8">
@@ -134,6 +147,7 @@
                         </div>
                     </div>
                 </form>
+
                 <div style="position: absolute; bottom:30px; right:210px;">
                     <a href="{% url 'step3' %}?finish={{production_instance.id}}" id="finishBtn"
                        class="btn btn-secondary">Finish</a>
@@ -167,42 +181,39 @@
         }
 
         function displayBtnFinish(){
-        const production_id = '{{ production_instance.id }}';
-        $.ajax({
-            url: '{% url "manage-btn-finish" %}',
-            data: { 'production_id': production_id },
-            success: (response) => {
-                if(response.success){
-                    $("#finishBtn").show();;
-                }else{
-                    $("#finishBtn").hide();
+            const production_id = '{{ production_instance.id }}';
+            $.ajax({
+                url: '{% url "manage-btn-finish" %}',
+                data: { 'production_id': production_id },
+                success: (response) => {
+                    if(response.success){
+                        $("#finishBtn").show();
+                    }else{
+                        $("#finishBtn").hide();
+                    }
                 }
+            });
+        };
 
-            }
-        });
-    };
         displayBtnFinish();
 
-     // Chargement des moyen de la ligne
-
-
-      function update_moyen(){
-        const ligne_id = '{{ ligne_id }}';
-        $.ajax({
-            url: '{% url "load-moyen" %}',
-            data: { 'ligne_id': ligne_id },
-            success: (data) => {
-                $("#id_moyen").html('');
-                $("#id_moyen").append(new Option('----------', ''));
-                for (var i = 0; i < data.length; i++) {
-                    var option = new Option(data[i].nom, data[i].id);
-                    $("#id_moyen").append($(option));
+        function update_moyen(){
+            const ligne_id = '{{ ligne_id }}';
+            $.ajax({
+                url: '{% url "load-moyen" %}',
+                data: { 'ligne_id': ligne_id },
+                success: (data) => {
+                    $("#id_moyen").html('');
+                    $("#id_moyen").append(new Option('----------', ''));
+                    for (var i = 0; i < data.length; i++) {
+                        var option = new Option(data[i].nom, data[i].id);
+                        $("#id_moyen").append($(option));
+                    }
                 }
-            }
-        });
-    };
+            });
+        }
 
-    update_moyen();
+        update_moyen();
 
         // Écouteur d'événement pour le changement de type d'arrêt
         $("#id_type_arret").change(function() {
@@ -257,7 +268,39 @@
             toggleFieldsVisibility();
         });
 
-        // Reste du code...
+        // Écouteur d'événement pour le changement de changement
+        $("#id_changement").change(function() {
+            var selectedChangement = $("#id_changement option:selected").text().toLowerCase();
+            if (selectedChangement.includes('commun') || selectedChangement.includes('version') || selectedChangement.includes('spécifique')) {
+                const secteur = '{{ production_instance.secteur.id }}';
+                const ligne = '{{ production_instance.ligne.id }}';
+                const client = '{{ client.id }}';
+                const produit = '{{ produit.id }}';
+                const face_du_produit = '{{ face_du_produit_id }}';
+
+                $.ajax({
+                    url: "{% url 'get_obi_value' %}",
+                    data: {
+                        'secteur': secteur,
+                        'ligne': ligne,
+                        'client': client,
+                        'produit': produit,
+                        'face_du_produit': face_du_produit,
+                        'changement': selectedChangement
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            $("#obi_value").val(data.obi);
+                            $("#id_obi_container").css("display", "flex");
+                        } else {
+                            $("#id_obi_container").hide();
+                        }
+                    }
+                });
+            } else {
+                $("#id_obi_container").hide();
+            }
+        });
 
         // Événement pour le bouton Soumettre
         $('#submitBtn').click(function() {
@@ -282,7 +325,7 @@
                     } else {
                         $('#message-container').html(
                             '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                            'Une erreur s\'est produite lors de la requête.' +
+                            response.success +
                             '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
                             '<span aria-hidden="true">&times;</span>' +
                             '</button>' +
@@ -290,23 +333,44 @@
                         );
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function(response) {
                     $('#message-container').html(
                         '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                        'Une erreur s\'est produite lors de la requête.' +
+                        response.responseJSON.error +
                         '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
                         '<span aria-hidden="true">&times;</span>' +
                         '</button>' +
                         '</div>'
                     );
-                    console.error(error);
                 }
             });
         });
 
-        // Événement pour le bouton Retour
-        $('#backBtn').click(function() {
-            window.history.back();
+         // Fonction pour calculer le temps de dépassement
+    function calculerTempsDepassement() {
+        var heures = parseInt($("#id_duree_en_heure").val() || 0);
+        var minutes = parseInt($("#id_duree_en_minute").val() || 0);
+        var obi = parseInt($("#obi_value").val() || 0);
+
+        // Calcul du temps de dépassement
+        var dureeTotaleEnMinutes = heures + minutes/60;
+        var tempsDepassement = dureeTotaleEnMinutes - obi; // en minutes
+
+        // Mettre à jour le champ Temps de dépassement
+        $("#temps_depassement").val(tempsDepassement);
+    }
+
+    // Écouteurs d'événements pour les champs de durée et "Obi"
+    $("#id_duree_en_heure, #id_duree_en_minute, #obi_value").on('change keyup', function() {
+        calculerTempsDepassement();
+    });
+
+    // Appel initial au chargement de la page
+    calculerTempsDepassement();
+
+
+        document.getElementById('backBtn').addEventListener('click', function() {
+        window.history.back();
         });
     });
 </script>
