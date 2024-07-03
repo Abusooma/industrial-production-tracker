@@ -1,0 +1,181 @@
+/* static/css/styles.css */
+
+/* Rendre la barre de navigation fixe */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+/* Ajuster la marge supérieure pour le contenu principal */
+.main-content {
+    margin-top: 70px; /* Ajustez cette valeur en fonction de la hauteur de votre barre de navigation */
+}
+
+/* Les autres styles restent inchangés */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f9fa;
+}
+
+.navbar {
+    background-color: #343a40;
+}
+
+.navbar-brand img {
+    height: 40px;
+}
+
+.navbar-nav .nav-item .nav-link {
+    color: white;
+}
+
+.navbar-nav .nav-item .nav-link:hover {
+    color: #00ae4e;
+}
+
+.form-container {
+    margin-top: 50px;
+}
+
+.sidebar {
+    height: 100%;
+    width: 250px;
+    position: fixed;
+    top: 56px; /* Ajusté pour la hauteur de la barre de navigation */
+    left: 0;
+    background-color: #343a40;
+    padding-top: 20px;
+}
+
+.sidebar a {
+    padding: 10px 15px;
+    text-decoration: none;
+    font-size: 18px;
+    color: white;
+    display: block;
+}
+
+.sidebar a:hover {
+    background-color: #575d63;
+}
+
+.sidebar a i {
+    margin-right: 10px;
+}
+
+.navbar-nav .nav-item .nav-link.active {
+    color: #00ae4e; /* Couleur du texte lorsque l'élément est actif */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Animation de transition */
+}
+
+.navbar-nav .nav-item .nav-link.active:hover {
+    color: #00ae4e; /* Couleur du texte au survol lorsque l'élément est actif */
+}
+
+.sidebar-link {
+    padding: 10px 15px;
+    text-decoration: none;
+    font-size: 18px;
+    color: white;
+    display: block;
+}
+
+.sidebar-link:hover {
+    background-color: #575d63;
+}
+
+.sidebar-link.active {
+    color: #00ae4e; /* Couleur du texte lorsque le lien est actif */
+}
+.main-content {
+    margin-left: 260px;
+    padding: 20px;
+    margin-top: 70px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.small-input {
+    width: 100px; /* Ajustez la largeur selon vos besoins */
+}
+
+.info-header {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    width: 1230px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#id_moyen_container, #id_changement_container, #id_action_container {
+    display: none;
+    flex-direction: row;
+}
+
+.duration-input {
+    display: flex;
+    align-items: center;
+}
+
+.duration-input .form-group {
+    flex: 1;
+    margin-right: 10px;
+}
+
+.alert-dismissible .close {
+    position: relative;
+    top: -2px;
+    right: -21px;
+    line-height: 20px;
+}
+
+.btn-customer{
+    background-color: #00ae4e;
+    color: #FFFFFFFF;
+    font-weight: 500;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, transform 0.2s;
+}
+.btn-customer:hover{
+     color: #FFFFFFFF;
+     transform: scale(1.0);
+     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.back-button {
+        display: inline-block;
+        padding: 8px;
+        border-radius: 50%;
+        background-color: #6c757d;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        line-height: 0; /* Pour ajuster la hauteur de l'icône */
+        margin-bottom: 10px;
+    }
+
+    .back-button i {
+        font-size: 24px;
+        padding: 4px;
+        line-height: normal; /* Réinitialisation de la hauteur */
+    }
+
+    .back-button:hover {
+        background-color: #00ae4e;
+        transform: scale(1.1);
+        color: #FFFFFFFF;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }

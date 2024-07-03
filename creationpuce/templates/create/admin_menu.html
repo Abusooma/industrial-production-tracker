@@ -1,0 +1,52 @@
+<!-- admin_menu.html -->
+{% extends 'main.html' %}
+
+{% block title %}Administration{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header btn-customer text-white">
+                    <h4 class="mb-0">Menus d'Administration</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-stopwatch"></i> SAISIR LE TEMPS DE CYCLE
+                                    </h5>
+                                    <p class="card-text">
+                                        Description du menu pour saisir le temps de cycle.
+                                    </p>
+                                    <a href="{% url 'saisir_temps_de_cycle' %}" class="btn btn-customer">
+                                        Accéder
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-cogs"></i> SAISIR L'OBJECTIVE CHANGEOVER
+                                    </h5>
+                                    <p class="card-text">
+                                        Description du menu pour saisir l'objective changover.
+                                    </p>
+                                    <a href="" class="btn btn-customer">
+                                        Accéder
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

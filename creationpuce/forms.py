@@ -1,5 +1,6 @@
 from django import forms
-from .models import Ligne, Production, SubTypeArret, DetailSubTypeArret, ArretDeProduction, FaceProduit, ProductionStepTwo
+from .models import Ligne, Production, SubTypeArret, DetailSubTypeArret, ArretDeProduction, FaceProduit, \
+    ProductionStepTwo, Moyen, TempsDeCycle
 
 
 class ProduitCreationForm(forms.ModelForm):
@@ -78,6 +79,7 @@ class ArretForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        ligne_id = kwargs.pop('ligne_id', None)
         super().__init__(*args, **kwargs)
         self.fields['subtype_arret'].queryset = SubTypeArret.objects.none()
         self.fields['detail_sub_type_arret'].queryset = DetailSubTypeArret.objects.none()
@@ -113,6 +115,14 @@ class ArretForm(forms.ModelForm):
             except (ValueError, TypeError, SubTypeArret.DoesNotExist):
                 pass
 
+        if self.instance.pk and self.instance.ligne:
+            ligne_id = self.instance.ligne.id
+
+        if ligne_id:
+            self.fields['moyen'].queryset = Moyen.objects.filter(ligne_id=ligne_id)
+        else:
+            self.fields['moyen'].queryset = Moyen.objects.none()
+
     def clean(self):
         cleaned_data = super().clean()
         heure = cleaned_data.get('duree_en_heure')
@@ -122,3 +132,18 @@ class ArretForm(forms.ModelForm):
             raise forms.ValidationError("Vous devez saisir au moins l'heure ou les minutes.")
 
         return cleaned_data
+
+
+class TempsDeCycleForm(forms.ModelForm):
+    class Meta:
+        model = TempsDeCycle
+        fields = ['secteur', 'client', 'produit', 'face', 'equipement_menant', 'tcm', 'commentaire']
+        widgets = {
+            'secteur': forms.Select(attrs={'class': 'form-control'}),
+            'client': forms.Select(attrs={'class': 'form-control'}),
+            'produit': forms.Select(attrs={'class': 'form-control'}),
+            'face': forms.Select(attrs={'class': 'form-control'}),
+            'equipement_menant': forms.Select(attrs={'class': 'form-control'}),
+            'tcm': forms.NumberInput(attrs={'class': 'form-control'}),
+            'commentaire': forms.TextInput(attrs={'class': 'form-control'}),
+        }

@@ -1,120 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Formulaire de Production</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <!-- jQuery UI CSS -->
-    <link href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet">
-    <!-- Font Awesome CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        .form-container {
-            margin-top: 50px;
-        }
-        /* Style pour la barre latérale */
-        .sidebar {
-            height: 100%;
-            width: 250px;
-            position: fixed;
-            top: 0;
-            left: 0;
-            background-color: #343a40;
-            padding-top: 20px;
-        }
-        .sidebar a {
-            padding: 10px 15px;
-            text-decoration: none;
-            font-size: 18px;
-            color: white;
-            display: block;
-        }
-        .sidebar a:hover {
-            background-color: #575d63;
-        }
-        .sidebar a i {
-            margin-right: 10px;
-        }
-        .main-content {
-            margin-left: 260px; /* Same as the width of the sidebar */
-            padding: 20px;
-        }
-        .user-info {
-            color: white;
-            padding: 15px;
-            background-color: #343a40;
-        }
-    </style>
-</head>
-<body>
-<div class="sidebar">
-    <a href="#"><i class="fas fa-database"></i>SAISIE DES DONNÉES FG85</a>
-    <a href="#"><i class="fas fa-database"></i>SAISIR LES TEMPS DE CYCLE</a>
-    <a href="#"><i class="fas fa-user-cog"></i>ADMINISTRATION</a>
-    <a href="#"><i class="fas fa-print"></i>APERÇUS ET IMPRESSIONS DES RAPPORTS</a>
-</div>
+{% extends "main.html" %}
 
-<div class="container form-container main-content">
-    <form method="POST" class="form-horizontal">
-        {% csrf_token %}
-        {{ form.non_field_errors }}
-        <div class="form-group row">
-            <label for="id_secteur" class="col-sm-2 col-form-label">{{ form.secteur.label_tag }}</label>
-            <div class="col-sm-10">
-                {{ form.secteur }}
-            </div>
-        </div>
-        <div class="form-group row">
-            <label for="id_ligne" class="col-sm-2 col-form-label">{{ form.ligne.label_tag }}</label>
-            <div class="col-sm-10">
-                {{ form.ligne }}
-            </div>
-        </div>
-        <div class="form-group row">
-            <label for="id_date_production" class="col-sm-2 col-form-label">{{ form.date_production.label_tag }}</label>
-            <div class="col-sm-10">
-                {{ form.date_production }}
-            </div>
-        </div>
-        <div class="form-group row">
-            <label for="id_equipe" class="col-sm-2 col-form-label">{{ form.equipe.label_tag }}</label>
-            <div class="col-sm-10">
-                {{ form.equipe }}
-            </div>
-        </div>
-        <div class="form-group row">
-            <label for="id_nb_op" class="col-sm-2 col-form-label">{{ form.nombre_operateur.label_tag }}</label>
-            <div class="col-sm-10">
-                {{ form.nombre_operateur }}
-            </div>
-        </div>
-        <div class="form-group row">
-            <label for="id_mois" class="col-sm-2 col-form-label">Mois:</label>
-            <div class="col-sm-10">
-                <input type="text" id="id_mois" name="mois" class="form-control" readonly>
-            </div>
-        </div>
-        <div class="form-group row">
-            <label for="id_semaine" class="col-sm-2 col-form-label">Semaine:</label>
-            <div class="col-sm-10">
-                <input type="text" id="id_semaine" name="semaine" class="form-control" readonly>
-            </div>
-        </div>
-        <div class="form-group row">
-            <div class="col-sm-10 offset-sm-2">
-                <input type="submit" class="btn btn-primary" value="Submit">
-            </div>
-        </div>
-    </form>
-</div>
+{% load static %}
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<!-- Bootstrap JS -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<!-- jQuery UI JS -->
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+{% block title %}Formulaire de Production{% endblock %}
+
+{% block content %}
+<form method="POST" class="form-horizontal">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="form-group row">
+        <label for="id_secteur" class="col-sm-2 col-form-label">{{ form.secteur.label_tag }}</label>
+        <div class="col-sm-10">
+            {{ form.secteur }}
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="id_ligne" class="col-sm-2 col-form-label">{{ form.ligne.label_tag }}</label>
+        <div class="col-sm-10">
+            {{ form.ligne }}
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="id_date_production" class="col-sm-2 col-form-label">{{ form.date_production.label_tag }}</label>
+        <div class="col-sm-10">
+            {{ form.date_production }}
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="id_equipe" class="col-sm-2 col-form-label">{{ form.equipe.label_tag }}</label>
+        <div class="col-sm-10">
+            {{ form.equipe }}
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="id_nb_op" class="col-sm-2 col-form-label">{{ form.nombre_operateur.label_tag }}</label>
+        <div class="col-sm-10">
+            {{ form.nombre_operateur }}
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="id_mois" class="col-sm-2 col-form-label">Mois:</label>
+        <div class="col-sm-10">
+            <input type="text" id="id_mois" name="mois" class="form-control" readonly>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="id_semaine" class="col-sm-2 col-form-label">Semaine:</label>
+        <div class="col-sm-10">
+            <input type="text" id="id_semaine" name="semaine" class="form-control" readonly>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-sm-10 offset-sm-2">
+            <input type="submit" class="btn btn-customer" value="Enregistrer">
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
 <script type="text/javascript">
     $(document).ready(function() {
         $("#id_secteur").change(function() {
@@ -127,7 +71,6 @@
                     },
                     success: function(data) {
                         $("#id_ligne").html('');
-                        // Ajouter "------------------" comme première option
                         $("#id_ligne").append(new Option('---------', ''));
                         for (var i = 0; i < data.length; i++) {
                             var option = new Option(data[i].nom, data[i].id);
@@ -140,12 +83,10 @@
             }
         });
 
-        // Initial check to see if we need to load the ligne options
         if ($("#id_secteur").val()) {
             $("#id_secteur").trigger('change');
         }
 
-        // Initialize the datepicker
         $("#id_date_production").datepicker({
             dateFormat: 'yy-mm-dd',
             onSelect: function(dateText) {
@@ -164,7 +105,6 @@
             return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
         }
 
-        // Initial check to calculate mois and semaine if date_production is already set
         if ($("#id_date_production").val()) {
             var dateText = $("#id_date_production").val();
             var date = new Date(dateText);
@@ -176,5 +116,4 @@
         }
     });
 </script>
-</body>
-</html>
+{% endblock %}

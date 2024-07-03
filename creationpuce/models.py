@@ -1,8 +1,6 @@
 from datetime import datetime, timedelta
-
 from dateutil import parser
 from babel.dates import format_date
-
 from django.db import models
 
 
@@ -25,7 +23,6 @@ class Ligne(models.Model):
 
 # TABLE ARRET
 class Arret(models.Model):
-    # ligne (à verifier après)
     nom = models.CharField(max_length=200)
     commentaire = models.TextField(max_length=200, blank=True, null=True)
     heure_et_minute = models.TimeField(blank=True, null=True)
@@ -43,7 +40,7 @@ class SubTypeArret(models.Model):
         return self.description
 
 
-# DETAILS D'UN SUBTYPE DE  L' ARRET
+# DETAILS D'UN SUBTYPE DE L'ARRET
 class DetailSubTypeArret(models.Model):
     arret = models.ForeignKey(Arret, on_delete=models.CASCADE)
     sub_type_arret = models.ForeignKey(SubTypeArret, on_delete=models.CASCADE)
@@ -65,7 +62,7 @@ class Moyen(models.Model):
         return self.nom
 
 
-# TABLE L' EQUIPE
+# TABLE L'EQUIPE
 class Equipe(models.Model):
     nom = models.CharField(max_length=100)
 
@@ -73,7 +70,7 @@ class Equipe(models.Model):
         return self.nom
 
 
-# TABLE PLAGE DE TRAVAIL DE L' EQUIPE
+# TABLE PLAGE DE TRAVAIL DE L'EQUIPE
 class PlageDeTravail(models.Model):
     equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE)
     debut = models.TimeField()
@@ -96,8 +93,6 @@ class FaceProduit(models.Model):
 class Produit(models.Model):
     code_ac = models.CharField(max_length=15, blank=True, null=True)
 
-    # famille
-
     def __str__(self):
         return self.code_ac
 
@@ -116,8 +111,6 @@ class Production(models.Model):
     date_production = models.DateTimeField()
     nombre_operateur = models.IntegerField(default=2)
 
-    # Les Intervenants ou Employes
-
     def __str__(self):
         return f"{self.secteur.nom_secteur} - {self.ligne.nom} - {self.date_production.strftime('%Y-%m-%d')}"
 
@@ -130,6 +123,62 @@ class Production(models.Model):
         if isinstance(self.date_production, str):
             self.date_production = parser.parse(self.date_production)
         return format_date(self.date_production, format='MMMM', locale='fr')
+
+    def sum_temps_ouverture(self):
+        return sum(step.temps_ouverture() for step in self.productionsteptwo_set.all())
+
+    def sum_non_qualite(self):
+        return sum(step.non_quality() for step in self.productionsteptwo_set.all())
+
+    def sum_desengagement(self):
+        return sum(
+            arret.duree_en_heure + (arret.duree_en_minute or 0) / 60
+            for arret in self.arretdeproduction_set.filter(type_arret__nom__icontains="engagement")
+        )
+
+    def sum_arret_propre(self):
+        return sum(
+            arret.duree_en_heure + (arret.duree_en_minute or 0) / 60
+            for arret in self.arretdeproduction_set.filter(type_arret__nom__icontains="propre")
+        )
+
+    def sum_arret_induit(self):
+        return sum(
+            arret.duree_en_heure + (arret.duree_en_minute or 0) / 60
+            for arret in self.arretdeproduction_set.filter(type_arret__nom__icontains="induit")
+        )
+
+    def sum_all_arrets(self):
+        return sum(
+            arret.duree_en_heure + (arret.duree_en_minute or 0) / 60
+            for arret in self.arretdeproduction_set.all()
+        )
+
+    def calculate_tr(self):
+        return self.sum_temps_ouverture() - self.sum_desengagement()
+
+    def calculate_tf(self, tr):
+        return tr - (self.sum_arret_propre() + self.sum_arret_induit())
+
+    def calculate_ecart_de_cadence(self, tf):
+        return self.sum_temps_ouverture() - (tf - self.sum_all_arrets())
+
+    def calculate_tn(self, tf, ecart_de_cadence):
+        return tf - ecart_de_cadence
+
+    def calculate_tu(self):
+        tr = self.calculate_tr()
+        tf = self.calculate_tf(tr)
+        ecart_de_cadence = self.calculate_ecart_de_cadence(tf)
+        tn = self.calculate_tn(tf, ecart_de_cadence)
+        return tn - self.sum_non_qualite()
+
+    def calculate_trs(self):
+        tr = self.calculate_tr()
+        tu = self.calculate_tu()
+        if tr == 0:
+            return 0
+        return (tu / tr) * 100
 
 
 class Intervenant(models.Model):
@@ -187,17 +236,28 @@ class ProductionStepTwo(models.Model):
         temps_de_cycle = TempsDeCycle.objects.filter(secteur=self.production.secteur, produit=self.produit).first()
         if temps_de_cycle:
             tcm = temps_de_cycle.tcm
-        good_quantity = quantity_fs + quantity_fc
-        if good_quantity == 0:
+        total_quantity = quantity_fs + quantity_fc + defaults
+        if total_quantity == 0:
             return 0
 
-        tuf = (tcm * (good_quantity - defaults)) / 3600
+        tuf = (tcm * total_quantity) / 3600
+
         return float(tuf)
 
-    def total_arret(self):
-        temps_ouverture = self.temps_ouverture()
+    def non_quality(self):
+        defaults = self.defaults or 0
+        tcm = 0
+        temps_de_cycle = TempsDeCycle.objects.filter(secteur=self.production.secteur, produit=self.produit).last()
+        if temps_de_cycle:
+            tcm = temps_de_cycle.tcm
+        return float(defaults * tcm)
+
+    def calcul_initial_trs(self):
         tuf = self.calculate_tuf()
-        return temps_ouverture - tuf
+        temps_ouverture = self.temps_ouverture()
+        if temps_ouverture > 0:
+            return (tuf / temps_ouverture) * 100
+        return 0
 
 
 class ArretDeProduction(models.Model):
@@ -206,10 +266,8 @@ class ArretDeProduction(models.Model):
     subtype_arret = models.ForeignKey(SubTypeArret, on_delete=models.CASCADE, blank=True, null=True)
     detail_sub_type_arret = models.ForeignKey(DetailSubTypeArret, on_delete=models.CASCADE, null=True, blank=True)
     moyen = models.ForeignKey(Moyen, on_delete=models.CASCADE, blank=True, null=True)
-
     duree_en_heure = models.IntegerField(null=True, blank=True)
     duree_en_minute = models.IntegerField(null=True, blank=True)
-
     commentaire = models.TextField(blank=True, null=True)
     intervenant = models.ForeignKey(Intervenant, on_delete=models.CASCADE, null=True, blank=True)
     changement = models.ForeignKey(Changement, on_delete=models.CASCADE, null=True, blank=True)
@@ -221,10 +279,11 @@ class ArretDeProduction(models.Model):
 
 class TempsDeCycle(models.Model):
     secteur = models.ForeignKey(Secteur, on_delete=models.CASCADE)
+    # ligne = models.ForeignKey(Ligne, on_delete=models.CASCADE)
     client = models.ForeignKey(Client, on_delete=models.CASCADE, null=True)
-    equipement_menant = models.ForeignKey(Moyen, on_delete=models.CASCADE, null=True)
     produit = models.ForeignKey(Produit, on_delete=models.CASCADE, null=True)
     face = models.ForeignKey(FaceProduit, on_delete=models.CASCADE, null=True)
+    equipement_menant = models.ForeignKey(Moyen, on_delete=models.CASCADE, null=True)
     tcm = models.DecimalField(max_digits=10, decimal_places=2, help_text="Temps de cycle moyen en Heure", blank=True,
                               null=True)
     commentaire = models.CharField(max_length=155, blank=True, null=True)
@@ -232,9 +291,18 @@ class TempsDeCycle(models.Model):
     def __str__(self):
         return f"{self.produit} - {self.face} - {self.tcm}"
 
-# class ObjectifChangeOver(models.Model):
-# client
-# produit
-# type_de_dechangement (changement)
-# duree_objectif
-# commentaire
+
+class ObjectifChangeOver(models.Model):
+    secteur = models.ForeignKey(Secteur, on_delete=models.CASCADE)
+    ligne = models.ForeignKey(Ligne, on_delete=models.CASCADE)
+    client = models.ForeignKey(Client, on_delete=models.CASCADE)
+    # produit = models.ForeignKey(Produit, on_delete=models.CASCADE)
+    # face = models.ForeignKey(FaceProduit, on_delete=models.CASCADE)
+    changement_produit_commun = models.FloatField()
+    changement_version = models.FloatField()
+    changement_produit_specifique = models.FloatField()
+    changement_face = models.FloatField()
+    commentaire = models.CharField(max_length=155)
+
+    def __str__(self):
+        return self.client

@@ -1,43 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Formulaire d'Arrêt</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet">
-    <style>
-        .form-container {
-            margin-top: 30px;
-        }
-        #id_moyen_container, #id_changement_container, #id_action_container {
-            display: none;
-            flex-direction: row;
-        }
-        .duration-input {
-            display: flex;
-            align-items: center;
-        }
-        .duration-input .form-group {
-            flex: 1;
-            margin-right: 10px;
-        }
-        .alert-dismissible .close {
-            position: relative;
-            top: -2px;
-            right: -21px;
-            line-height: 20px;
-        }
-        .back-button {
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
+<!-- formulaire_d_arret.html -->
+{% extends "main.html" %}
+{% load static %}
+
+{% block title %}Formulaire d'Arrêt{% endblock %}
+
+{% block content %}
 <div class="container">
     <div class="row">
-        <div class="col-md-12 back-button">
-            <button type="button" id="backBtn" class="btn btn-secondary">Retour</button>
-        </div>
     </div>
     <div id="message-container" class="mt-4">
         {% if message %}
@@ -157,21 +126,25 @@
                     <div class="form-group row">
                         <div class="col-sm-4"></div>
                         <div class="col-sm-8">
-                            <button type="button" id="submitBtn" class="btn btn-primary">Soumettre</button>
+                            <!-- Bouton de Retour -->
+                            <button type="button" class="back-button" id="backBtn" style="margin-right:20px">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="button" id="submitBtn" class="btn btn-customer">Enregistrer</button>
                         </div>
                     </div>
                 </form>
-                <div style="position: absolute; bottom:17px; right:300px;">
+                <div style="position: absolute; bottom:30px; right:210px;">
                     <a href="{% url 'step3' %}?finish={{production_instance.id}}" id="finishBtn"
-                       class="btn btn-success">Finish</a>
+                       class="btn btn-secondary">Finish</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+{% endblock %}
+
+{% block extra_scripts %}
 <script type="text/javascript">
     $(document).ready(function() {
         // Fonction pour gérer l'affichage des champs intervenant, changement et action
@@ -209,6 +182,27 @@
         });
     };
         displayBtnFinish();
+
+     // Chargement des moyen de la ligne
+
+
+      function update_moyen(){
+        const ligne_id = '{{ ligne_id }}';
+        $.ajax({
+            url: '{% url "load-moyen" %}',
+            data: { 'ligne_id': ligne_id },
+            success: (data) => {
+                $("#id_moyen").html('');
+                $("#id_moyen").append(new Option('----------', ''));
+                for (var i = 0; i < data.length; i++) {
+                    var option = new Option(data[i].nom, data[i].id);
+                    $("#id_moyen").append($(option));
+                }
+            }
+        });
+    };
+
+    update_moyen();
 
         // Écouteur d'événement pour le changement de type d'arrêt
         $("#id_type_arret").change(function() {
@@ -284,7 +278,7 @@
                         );
                         setTimeout(function() {
                             window.location.reload();
-                        }, 3000);
+                        }, 1000);
                     } else {
                         $('#message-container').html(
                             '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
@@ -316,5 +310,4 @@
         });
     });
 </script>
-</body>
-</html>
+{% endblock %}

@@ -1,8 +1,9 @@
 from django.http import JsonResponse
+from django.core import serializers
 from django.shortcuts import render, redirect, get_object_or_404
-from .forms import ProduitCreationForm, ArretForm, ProductionDetailsForm
+from .forms import ProduitCreationForm, ArretForm, ProductionDetailsForm, TempsDeCycleForm
 from .models import Ligne, SubTypeArret, DetailSubTypeArret, Production, Produit, Equipe, FaceProduit, Secteur, \
-    TempsDeCycle, ProductionStepTwo, ArretDeProduction
+    TempsDeCycle, ProductionStepTwo, ArretDeProduction, Moyen
 
 
 def create_produit_step1(request, pk=None):
@@ -30,12 +31,13 @@ def create_produit_step1(request, pk=None):
 
 def create_produit_step2(request):
     production_instance_id = request.session.get('production_instance_id')
-    production_instance = Production.objects.get(id=production_instance_id)
-    equipe_id = production_instance.equipe.id
-    secteur_id = production_instance.secteur.id
 
     if not production_instance_id:
         return redirect('step1')
+
+    production_instance = Production.objects.get(id=production_instance_id)
+    equipe_id = production_instance.equipe.id
+    secteur_id = production_instance.secteur.id
 
     if request.method == 'POST':
         form = ProductionDetailsForm(request.POST, secteur_id=secteur_id)
@@ -79,20 +81,17 @@ def create_produit_step3(request):
         return redirect('step1')
 
     production_instance = Production.objects.get(id=production_instance_id)
+    ligne_id = production_instance.ligne.id
     production_step_two = ProductionStepTwo.objects.filter(production=production_instance).first()
     produit = production_step_two.produit
     client = production_step_two.client
 
     if request.method == 'POST':
-        form = ArretForm(request.POST)
+        form = ArretForm(request.POST, ligne_id=ligne_id)
         if form.is_valid():
             arret = form.save(commit=False)
             arret.production = production_instance
             arret.save()
-
-            print(production_step_two.calculate_fpy())
-            print(production_step_two.temps_ouverture())
-            print(production_step_two.total_arret())
 
             message = 'Arrêt ajouté avec succès'
             message_type = 'success'
@@ -103,7 +102,7 @@ def create_produit_step3(request):
         return JsonResponse({'success': message, 'message_type': message_type})
 
     else:
-        form = ArretForm()
+        form = ArretForm(ligne_id=ligne_id)
         message = None
         message_type = None
 
@@ -113,10 +112,56 @@ def create_produit_step3(request):
         'message': message,
         'message_type': message_type,
         'produit': produit,
-        'client': client
+        'client': client,
+        'ligne_id': ligne_id
     }
 
     return render(request, 'create/create_produit_step3.html', context=context)
+
+
+def adminMenu(request):
+    return render(request, 'create/admin_menu.html')
+
+
+def saisir_temps_de_cycle(request):
+    if request.method == 'POST':
+        form = TempsDeCycleForm(request.POST)
+        if form.is_valid():
+            secteur = form.cleaned_data['secteur']
+            client = form.cleaned_data['client']
+            produit = form.cleaned_data['produit']
+            equipement_menant = form.cleaned_data['equipement_menant']
+            # Vérification de l'unicité
+            if TempsDeCycle.objects.filter(secteur=secteur, client=client, produit=produit,
+                                           equipement_menant=equipement_menant).exists():
+                return JsonResponse({'success': False,
+                                     'message': 'Un temps de cycle avec exactement les mêmes informations (secteur, client, produit, face, equipement menant ) existe déjà.'})
+            else:
+                temps_de_cycle = form.save()
+                # Serialize the new entry to send it back to the client
+                new_entry = serializers.serialize('json', [temps_de_cycle])
+                return JsonResponse(
+                    {'success': True, 'message': 'Temps de cycle ajouté avec succès.', 'new_entry': new_entry})
+        else:
+            return JsonResponse({'success': False, 'message': 'Formulaire invalide.'})
+    else:
+        form = TempsDeCycleForm()
+
+    temps_de_cycles = TempsDeCycle.objects.all()[:5]
+
+    context = {
+        'form': form,
+        'temps_de_cycles': temps_de_cycles
+    }
+    return render(request, 'create/saisir_temps_de_cycle.html', context)
+
+
+def load_more_temps_de_cycles(request):
+    offset = int(request.GET.get('offset', 0))
+    limit = 3
+    temps_de_cycles = TempsDeCycle.objects.all()[offset:offset + limit]
+    serialized_temps_de_cycles = serializers.serialize('json', temps_de_cycles)
+    return JsonResponse({'temps_de_cycles': serialized_temps_de_cycles})
 
 
 def load_products(request):
@@ -147,6 +192,12 @@ def load_faceproduit(request):
     secteur_id = request.GET.get('secteur')
     faceproduit = FaceProduit.objects.filter(secteur_id=secteur_id).values('id', 'nom')
     return JsonResponse(list(faceproduit), safe=False)
+
+
+def load_moyen(request):
+    ligne_id = request.GET.get('ligne_id')
+    moyen = Moyen.objects.filter(ligne_id=ligne_id).values('id', 'nom')
+    return JsonResponse(list(moyen), safe=False)
 
 
 def load_horaires(request):
@@ -183,7 +234,7 @@ def load_tcm(request):
     face_id = request.GET.get('face_id')
 
     try:
-        tcm = TempsDeCycle.objects.get(secteur_id=secteur_id, produit_id=produit_id, face_id=face_id).tcm
+        tcm = TempsDeCycle.objects.filter(secteur_id=secteur_id, produit_id=produit_id, face_id=face_id).last().tcm
         return JsonResponse({'tcm': tcm})
     except TempsDeCycle.DoesNotExist:
         return JsonResponse({'tcm': None}, status=404)
