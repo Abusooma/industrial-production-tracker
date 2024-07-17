@@ -2,7 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.create_produit_step1, name='step1'),
+    path('', views.accueil, name='accueil'),
+    path('secteurs/', views.secteur, name='secteur'),
+    path('features/', views.features, name='features'),
+    path('start/production-create-step1', views.create_produit_step1, name='step1'),
     path('admin-menu/', views.adminMenu, name='admin-menu'),
     path('<int:pk>/', views.create_produit_step1, name='update-step1'),
     path('create-produit-step2/', views.create_produit_step2, name='step2'),
@@ -12,6 +15,8 @@ urlpatterns = [
     path('load-detailsubtypes/', views.load_detailsubtypes, name='load_detailsubtypes'),
     path('load_horaires/', views.load_horaires, name='load_horaires'),
     path('load_face_du_produit/', views.load_faceproduit, name='load-face-produit'),
+    path('load_produit/', views.load_products, name='load_products'),
+    path('load_produit_by_family/', views.load_product_by_family, name='load_products_by_family'),
     path('load_moyen/', views.load_moyen, name='load-moyen'),
     path('load-tcm/', views.load_tcm, name='load_tcm'),
     path('manage-display-btn/', views.manageBtn, name='manage-btn-next'),

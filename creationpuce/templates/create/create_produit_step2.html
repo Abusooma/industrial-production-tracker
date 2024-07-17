@@ -188,6 +188,25 @@
         });
     };
 
+    // Fonction pour charger les produits basés sur le client sélectionné
+        $('#id_client').change(function() {
+            var clientId = $(this).val();
+            $.ajax({
+                url: '{% url "load_products" %}',
+                data: {
+                    'client_id': clientId
+                },
+                success: function(data) {
+                    var produitSelect = $('#id_produit');
+                    produitSelect.empty();
+                    produitSelect.append('<option value="">-------------</option>');
+                    $.each(data, function(key, value) {
+                        produitSelect.append('<option value="' + value.id + '">' + value.code_ac + '</option>');
+                    });
+                }
+            });
+        });
+
     // Charger les horaires au chargement de la page
     $(document).ready(updateHoraires);
 
@@ -234,14 +253,14 @@
 
     // Fonction pour charger le TCM basé sur le secteur, produit et face du produit
     const updateTCM = () => {
-        const secteur_id = '{{ secteur_id }}';
+        const ligne_id = '{{ ligne_id }}';
         const produit_id = $('#id_produit').val();
         const face_id = $('#id_face_du_produit').val();
-        if (secteur_id && produit_id && face_id) {
+        if (ligne_id && produit_id && face_id) {
             $.ajax({
                 url: '{% url "load_tcm" %}',
                 data: {
-                    'secteur_id': secteur_id,
+                    'ligne_id': ligne_id,
                     'produit_id': produit_id,
                     'face_id': face_id
                 },

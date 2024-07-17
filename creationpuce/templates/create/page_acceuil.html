@@ -10,10 +10,128 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        /* Custom Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background-color: #343a40;
+        }
+        .navbar-brand img {
+            width: 150px;
+        }
+        header {
+            position: relative;
+            background: linear-gradient(135deg, #1d976c 0%, #93f9b9 100%);
+            color: white;
+            padding: 100px 0;
+            text-align: center;
+        }
+        header .container {
+            position: relative;
+            z-index: 2;
+        }
+        header .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://www.transparenttextures.com/patterns/diagmonds.png') repeat;
+            z-index: 1;
+            opacity: 0.3;
+        }
+        .about {
+            padding: 60px 0;
+        }
+        .about img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .features {
+            padding: 60px 0;
+            background-color: #ffffff;
+        }
+        .features .col-md-4 {
+            margin-bottom: 30px;
+        }
+        .features .fa {
+            color: #28a745;
+            transition: transform 0.3s ease;
+        }
+        .features .fa:hover {
+            transform: rotate(20deg);
+        }
+        .cta {
+            padding: 60px 0;
+            background-color: #1d976c;
+            color: white;
+            text-align: center;
+        }
+        footer {
+            background-color: #343a40;
+            color: white;
+            padding: 40px 0;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .animated {
+            animation-duration: 1s;
+            animation-fill-mode: both;
+        }
+        .fadeInUp {
+            animation-name: fadeInUp;
+        }
+        .slideInLeft {
+            animation-name: slideInLeft;
+        }
+        .slideInRight {
+            animation-name: slideInRight;
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark">
-    <a class="navbar-brand" href="{% url 'step1' %}">
+    <a class="navbar-brand" href="{% url 'accueil' %}">
         <img src="{% static 'image/logo_filtre.png' %}" alt="Logo">
     </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
@@ -23,36 +141,62 @@
     <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'login' %}">Se connecter</a>
+                <a class="nav-link" href="{% url 'accueil' %}">Accueil</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'features' %}">Fonctionnalités</a>
+            </li>
+            {% if request.user.is_authenticated %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'secteur' %}">Dashboard</a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-toggle="dropdown"
+                   aria-haspopup="true" aria-expanded="false">
+                    <img src="{% static 'image/avatar.jpg' %}" alt="Profile Photo" class="rounded-circle"
+                         width="30" height="30">
+                </a>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="profileDropdown">
+                    <a class="dropdown-item" href="{% url 'logout' %}">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </li>
+            {% else %}
+            <li class="nav-item">
+                <a class="nav-link btn" href="{% url 'login' %}">Connexion</a>
+            </li>
+            {% endif %}
         </ul>
     </div>
 </nav>
 
-<header class="bg-dark text-white text-center py-5">
-    <div class="container">
-        <h1>Bienvenue chez My Application</h1>
-        <p class="lead">Gestion de la production des puces pour une efficacité maximale</p>
-        <a href="{% url 'login' %}" class="btn btn-primary btn-lg mt-3">Commencer</a>
+<header>
+    <div class="container mt-5">
+        <h1 class="animated fadeInUp">Bienvenue chez CITI APP</h1>
+        <p class="lead animated fadeInUp">Gestion de la production des cartes pour une efficacité maximale</p>
+        {% if not request.user.is_authenticated %}
+        <a href="{% url 'login' %}" class="btn btn-success btn-lg mt-3 animated fadeInUp">Commencer</a>
+        {% endif %}
     </div>
 </header>
 
-<section class="about py-5">
+<section class="about py-5 mt-5">
     <div class="container">
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-6 animated slideInLeft">
                 <h2>À propos de notre société</h2>
                 <p>
-                    Notre société est spécialisée dans la fabrication et la gestion de la production des puces. Avec des
-                    années d'expérience dans l'industrie, nous nous engageons à offrir des solutions innovantes et
-                    efficaces pour optimiser votre production.
+                    Notre société est CITI ACTIA APP spécialisée dans la fabrication et la gestion de la production des
+                    Cartes. Avec des années d'expérience dans l'industrie, nous nous engageons à offrir des solutions
+                    innovantes et efficaces pour optimiser votre production.
                 </p>
                 <p>
                     Grâce à notre application, vous pouvez facilement gérer les données de production, générer des
                     rapports détaillés et améliorer la performance globale de votre usine.
                 </p>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6 animated slideInRight">
                 <img src="{% static 'image/factory.jpg' %}" alt="Usine" class="img-fluid">
             </div>
         </div>
@@ -62,17 +206,17 @@
 <section class="features bg-light py-5">
     <div class="container">
         <div class="row">
-            <div class="col-md-4 text-center">
+            <div class="col-md-4 text-center animated fadeInUp">
                 <i class="fas fa-chart-line fa-3x mb-3"></i>
                 <h3>Efficacité</h3>
                 <p>Optimisez votre production avec des données en temps réel et des rapports précis.</p>
             </div>
-            <div class="col-md-4 text-center">
+            <div class="col-md-4 text-center animated fadeInUp" style="animation-delay: 0.2s;">
                 <i class="fas fa-cogs fa-3x mb-3"></i>
                 <h3>Automatisation</h3>
                 <p>Réduisez les erreurs humaines grâce à nos outils automatisés de saisie de données.</p>
             </div>
-            <div class="col-md-4 text-center">
+            <div class="col-md-4 text-center animated fadeInUp" style="animation-delay: 0.4s;">
                 <i class="fas fa-shield-alt fa-3x mb-3"></i>
                 <h3>Sécurité</h3>
                 <p>Vos données sont protégées avec les plus hauts standards de sécurité.</p>
@@ -81,9 +225,40 @@
     </div>
 </section>
 
-<footer class="bg-dark text-white text-center py-3">
+<section class="cta bg-dark text-white py-5">
+    <div class="container text-center">
+        <h2 class="animated fadeInUp">Prêt à améliorer votre production?</h2>
+        <p class="lead animated fadeInUp">Rejoignez-nous dès aujourd'hui et découvrez comment notre application peut
+            révolutionner votre processus de production.</p>
+        <a href="" class="btn btn-success btn-lg mt-3 animated fadeInUp">Inscrivez-vous maintenant</a>
+    </div>
+</section>
+
+<footer class="bg-dark text-white text-center py-4">
     <div class="container">
-        <p>&copy; 2024 My Application. Tous droits réservés.</p>
+        <div class="row">
+            <div class="col-md-4">
+                <h5>Liens Utiles</h5>
+                <ul class="list-unstyled">
+                    <li><a href="" class="text-white">Politique de confidentialité</a></li>
+                    <li><a href="" class="text-white">Conditions d'utilisation</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h5>Contact</h5>
+                <ul class="list-unstyled">
+                    <li>Email: contact@citiapp.com</li>
+                    <li>Téléphone: +123 456 789</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h5>Suivez-nous</h5>
+                <a href="#" class="text-white mr-2"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="text-white mr-2"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="text-white"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+        <p class="mt-4">&copy; 2024 CITI ACTIA. Tous droits réservés.</p>
     </div>
 </footer>
 

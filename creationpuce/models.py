@@ -55,8 +55,8 @@ class Moyen(models.Model):
     ligne = models.ForeignKey(Ligne, on_delete=models.CASCADE, null=True, blank=True)
     subtype_arret = models.ForeignKey(SubTypeArret, on_delete=models.CASCADE, null=True, blank=True)
     nom = models.CharField(max_length=200)
-    heure_debut = models.TimeField()  # Temps de début d'opération
-    heure_fin = models.TimeField()  # Temps de fin d'opération
+    heure_debut = models.TimeField(blank=True, null=True)  # Temps de début d'opération
+    heure_fin = models.TimeField(blank=True, null=True)  # Temps de fin d'opération
 
     def __str__(self):
         return self.nom if self.nom else "N/A"
@@ -89,12 +89,12 @@ class FaceProduit(models.Model):
         return self.nom if self.nom else "N/A"
 
 
-# TABLE PRODUIT
-class Produit(models.Model):
-    code_ac = models.CharField(max_length=15, blank=True, null=True)
+# TABLE Famille
+class Famille(models.Model):
+    nom = models.CharField(max_length=15, blank=True, null=True)
 
     def __str__(self):
-        return self.code_ac if self.code_ac else "N/A"
+        return self.nom if self.nom else "N/A"
 
 
 class Client(models.Model):
@@ -102,6 +102,16 @@ class Client(models.Model):
 
     def __str__(self):
         return self.nom if self.nom else "N/A"
+
+
+# TABLE PRODUIT
+class Produit(models.Model):
+    famille = models.ForeignKey(Famille, on_delete=models.CASCADE, null=True)
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, null=True)
+    code_ac = models.CharField(max_length=15, blank=True, null=True)
+
+    def __str__(self):
+        return self.code_ac if self.code_ac else "N/A"
 
 
 class Production(models.Model):
@@ -278,12 +288,11 @@ class ArretDeProduction(models.Model):
 
 
 class TempsDeCycle(models.Model):
-    secteur = models.ForeignKey(Secteur, on_delete=models.CASCADE)
-    # ligne = models.ForeignKey(Ligne, on_delete=models.CASCADE)
+    ligne = models.ForeignKey(Ligne, on_delete=models.CASCADE, null=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE, null=True)
     produit = models.ForeignKey(Produit, on_delete=models.CASCADE, null=True)
     face = models.ForeignKey(FaceProduit, on_delete=models.CASCADE, null=True)
-    equipement_menant = models.ForeignKey(Moyen, on_delete=models.CASCADE, null=True)
+    moyen = models.ForeignKey(Moyen, on_delete=models.CASCADE, null=True)
     tcm = models.DecimalField(max_digits=10, decimal_places=2, help_text="Temps de cycle moyen en Heure", blank=True,
                               null=True)
     commentaire = models.CharField(max_length=155, blank=True, null=True)
@@ -300,11 +309,11 @@ class ObjectifChangeOver(models.Model):
     secteur = models.ForeignKey(Secteur, on_delete=models.CASCADE)
     ligne = models.ForeignKey(Ligne, on_delete=models.CASCADE)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
+    famille = models.ForeignKey(Famille, on_delete=models.CASCADE, null=True)
     produit = models.ForeignKey(Produit, on_delete=models.CASCADE, null=True)
-    face_du_produit = models.ForeignKey(FaceProduit, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return f"Objective ChangeOver : ID: {self.pk} - Produit : {self.produit.code_ac} - Famille : {self.client.nom}"
+        return f"Objective ChangeOver : ID: {self.pk} - Produit : {self.produit.code_ac} - Famille : {self.famille.nom}"
 
 
 class TypeDeChangementDeObjectif(models.Model):

@@ -2,15 +2,17 @@ from django import forms
 from datetime import datetime, date
 from .models import Ligne, Production, SubTypeArret, DetailSubTypeArret, ArretDeProduction, FaceProduit, \
     ProductionStepTwo, Moyen, TempsDeCycle, ObjectifChangeOver, TypeDeChangementDeObjectif, Produit, Client, Equipe, \
-    Secteur, Arret
+    Secteur, Arret, Famille
 
 
 class ProduitForm(forms.ModelForm):
     class Meta:
         model = Produit
-        fields = ['code_ac']
+        fields = ['code_ac', 'famille', 'client']
         widgets = {
             'code_ac': forms.TextInput(attrs={'class': 'form-control'}),
+            'famille': forms.Select(attrs={'class': 'form-control'}),
+            'client': forms.Select(attrs={'class': 'form-control'})
         }
 
 
@@ -65,7 +67,7 @@ class EquipeForm(forms.ModelForm):
 class MoyenForm(forms.ModelForm):
     class Meta:
         model = Moyen
-        fields = ['ligne', 'subtype_arret', 'nom', 'heure_debut', 'heure_fin']
+        fields = ['ligne', 'subtype_arret', 'nom']
         widgets = {
             'ligne': forms.Select(attrs={'class': 'form-control'}),
             'subtype_arret': forms.Select(attrs={'class': 'form-control'}),
@@ -150,6 +152,19 @@ class ProductionDetailsForm(forms.ModelForm):
         else:
             self.fields['face_du_produit'].queryset = FaceProduit.objects.none()
 
+        if 'client' in self.data:
+            try:
+                client_id = int(self.data.get('client'))
+                self.fields['produit'].queryset = Produit.objects.filter(client_id=client_id).order_by('code_ac')
+            except (ValueError, TypeError):
+                pass
+
+        elif self.instance.pk:
+            self.fields['produit'].queryset = self.instance.ligne.produit_set.order_by('code_ac')
+
+        else:
+            self.fields['produit'].queryset = Produit.objects.none()
+
 
 class ArretForm(forms.ModelForm):
     duree_en_heure = forms.IntegerField(label='Heures', required=False)
@@ -230,16 +245,48 @@ class ArretForm(forms.ModelForm):
 class TempsDeCycleForm(forms.ModelForm):
     class Meta:
         model = TempsDeCycle
-        fields = ['secteur', 'client', 'produit', 'face', 'equipement_menant', 'tcm', 'commentaire']
+        fields = ['ligne', 'client', 'produit', 'face', 'moyen', 'tcm', 'commentaire']
         widgets = {
-            'secteur': forms.Select(attrs={'class': 'form-control'}),
+            'ligne': forms.Select(attrs={'class': 'form-control'}),
             'client': forms.Select(attrs={'class': 'form-control'}),
             'produit': forms.Select(attrs={'class': 'form-control'}),
             'face': forms.Select(attrs={'class': 'form-control'}),
-            'equipement_menant': forms.Select(attrs={'class': 'form-control'}),
+            'moyen': forms.Select(attrs={'class': 'form-control'}),
             'tcm': forms.NumberInput(attrs={'class': 'form-control'}),
-            'commentaire': forms.TextInput(attrs={'class': 'form-control'}),
+            'commentaire': forms.Textarea(attrs={'class': 'form-control text-area-resize', 'rows': 5}),
         }
+        labels = {
+            'moyen': 'equipement menant'
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if 'client' in self.data:
+            try:
+                client_id = int(self.data.get('client'))
+                self.fields['produit'].queryset = Produit.objects.filter(client_id=client_id).order_by('code_ac')
+            except (ValueError, TypeError, Client.DoesNotExist):
+                pass
+
+        elif self.instance.pk:
+            self.fields['produit'].queryset = self.instance.client.produit_set.order_by('code_ac')
+
+        else:
+            self.fields['produit'].queryset = Produit.objects.none()
+
+        if 'ligne' in self.data:
+            try:
+                ligne_id = int(self.data.get('ligne'))
+                self.fields['moyen'].queryset = Moyen.objects.filter(ligne_id=ligne_id).order_by('nom')
+            except (ValueError, TypeError, Ligne.DoesNotExist):
+                pass
+
+        elif self.instance.pk:
+            self.fields['moyen'].queryset = self.instance.ligne.moyen_set.order_by('nom')
+
+        else:
+            self.fields['moyen'].queryset = Moyen.objects.none()
 
 
 class ObjectifChangeOverForm(forms.ModelForm):
@@ -251,14 +298,14 @@ class ObjectifChangeOverForm(forms.ModelForm):
             'ligne': forms.Select(attrs={'class': 'form-control'}),
             'client': forms.Select(attrs={'class': 'form-control'}),
             'produit': forms.Select(attrs={'class': 'form-control'}),
-            'face_du_produit': forms.Select(attrs={'class': 'form-control'}),
+            'famille': forms.Select(attrs={'class': 'form-control'})
+
         }
         labels = {
             'secteur': 'Secteur',
             'ligne': 'Ligne',
             'client': 'Client',
             'produit': 'Produit',
-            'face_du_produit': 'Face du produit',
         }
 
     def __init__(self, *args, **kwargs):
@@ -267,18 +314,27 @@ class ObjectifChangeOverForm(forms.ModelForm):
         if 'secteur' in self.data:
             try:
                 secteur_id = int(self.data.get('secteur'))
-                self.fields['face_du_produit'].queryset = FaceProduit.objects.filter(secteur_id=secteur_id).order_by(
-                    'nom')
                 self.fields['ligne'].queryset = Ligne.objects.filter(secteur_id=secteur_id).order_by('nom')
             except (ValueError, TypeError):
                 pass
         elif self.instance.pk:
-            self.fields['face_du_produit'].queryset = self.instance.secteur.faceproduit_set.order_by('nom')
             self.fields['ligne'].queryset = self.instance.secteur.ligne_set.order_by('nom')
 
         else:
-            self.fields['face_du_produit'].queryset = FaceProduit.objects.none()
             self.fields['ligne'].queryset = Ligne.objects.none()
+
+        if 'famille' in self.data:
+            try:
+                famille_id = int(self.data.get('famille'))
+                self.fields['produit'].queryset = Produit.objects.filter(famille_id=famille_id).order_by('code_ac')
+            except (ValueError, TypeError, Famille.DoesNotExist):
+                pass
+
+        elif self.instance.pk:
+            self.fields['produit'].queryset = self.instance.famille.produit_set.order_by('code_ac')
+
+        else:
+            self.fields['produit'].queryset = Produit.objects.none()
 
 
 class TypeDeChangementDeObjectifForm(forms.ModelForm):

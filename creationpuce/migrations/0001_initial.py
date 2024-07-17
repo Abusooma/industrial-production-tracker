@@ -5,10 +5,10 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
+
     ]
 
     operations = [
@@ -59,8 +59,10 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('code_ac', models.CharField(max_length=15, unique=True)),
                 ('date_production', models.DateTimeField()),
-                ('ligne', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='creationpuce.ligne')),
-                ('secteur', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='creationpuce.secteur')),
+                ('ligne',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='creationpuce.ligne')),
+                ('secteur',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='creationpuce.secteur')),
             ],
         ),
         migrations.AddField(
@@ -85,7 +87,8 @@ class Migration(migrations.Migration):
                 ('heure_fin', models.TimeField()),
                 ('ligne', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='creationpuce.ligne')),
                 ('type_arret', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='creationpuce.arret')),
-                ('subtype_arret', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='creationpuce.subtype_arret')),
+                ('subtype_arret',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='creationpuce.subtype_arret')),
             ],
         ),
         migrations.CreateModel(
@@ -94,7 +97,8 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('description', models.CharField(max_length=200)),
                 ('arret', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='creationpuce.arret')),
-                ('sub_type_arret', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='creationpuce.subtype_arret')),
+                ('sub_type_arret',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='creationpuce.subtype_arret')),
             ],
         ),
     ]

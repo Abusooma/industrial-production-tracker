@@ -1,4 +1,5 @@
 {% extends 'main.html' %}
+{% load static %}
 
 {% block title %}Saisir Temps de Cycle{% endblock %}
 
@@ -21,8 +22,8 @@
                         {% csrf_token %}
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                {{ form.secteur.label_tag }}
-                                {{ form.secteur }}
+                                {{ form.ligne.label_tag }}
+                                {{ form.ligne }}
                             </div>
                             <div class="col-md-6">
                                 {{ form.client.label_tag }}
@@ -41,8 +42,8 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                {{ form.equipement_menant.label_tag }}
-                                {{ form.equipement_menant }}
+                                {{ form.moyen.label_tag }}
+                                {{ form.moyen }}
                             </div>
                             <div class="col-md-6">
                                 {{ form.tcm.label_tag }}
@@ -68,14 +69,9 @@
                     <h4 class="mb-0">Ajouter des éléments</h4>
                 </div>
                 <div class="card-body">
-                    {% include 'partials/produit_form.html' %}
-                    {% include 'partials/ligne_form.html' %}
-                    {% include 'partials/secteur_form.html' %}
                     {% include 'partials/client_form.html' %}
-                    {% include 'partials/equipe_form.html' %}
-                    {% include 'partials/arret_form.html' %}
-                    {% include 'partials/subtype_arret_form.html' %}
-                    {% include 'partials/detail_subtype_arret_form.html' %}
+                    {% include 'partials/ligne_form.html' %}
+                    {% include 'partials/produit_form.html' %}
                     {% include 'partials/moyen_form.html' %}
                 </div>
             </div>
@@ -94,6 +90,41 @@
         option.text = newEntry.fields.nom || newEntry.fields.code_ac || newEntry.fields.description;
         select.add(option);
     }
+
+    // Fonction pour charger les produits basés sur le client sélectionné
+        $('#id_client').change(function() {
+            var clientId = $(this).val();
+            $.ajax({
+                url: '{% url "load_products" %}',
+                data: {
+                    'client_id': clientId
+                },
+                success: function(data) {
+                    var produitSelect = $('#id_produit');
+                    produitSelect.empty();
+                    produitSelect.append(new Option('-----------', ''));
+                    $.each(data, function(key, value) {
+                        produitSelect.append('<option value="' + value.id + '">' + value.code_ac + '</option>');
+                    });
+                }
+            });
+        });
+
+        $('#id_ligne').change(function(){
+        var ligne_id = $(this).val();
+        $.ajax({
+            url: '{% url "load-moyen" %}',
+            data: { 'ligne_id': ligne_id },
+            success: function(data) {
+                $("#id_moyen").html('');
+                $("#id_moyen").append(new Option('----------', ''));
+                for (var i = 0; i < data.length; i++) {
+                    var option = new Option(data[i].nom, data[i].id);
+                    $("#id_moyen").append(option);
+                }
+            }
+        });
+    });
 
     function validateForm(form) {
         var isValid = true;
@@ -133,8 +164,6 @@
                     if (response.success) {
                         $('#message').addClass('alert alert-success').text(response.message);
                         form[0].reset();
-                        toggleForm(formSelector);
-
                         if (response.new_entry) {
                             var newEntry = JSON.parse(response.new_entry)[0];
                             updateSelectOptions(updateSelectId, newEntry);
@@ -180,12 +209,7 @@
     handleFormSubmit('#tempsDeCycleForm', '{% url "saisir_temps_de_cycle" %}');
     handleFormSubmit('#produitFormInner', '{% url "ajouter_produit" %}', 'id_produit');
     handleFormSubmit('#ligneFormInner', '{% url "ajouter_ligne" %}', 'id_ligne');
-    handleFormSubmit('#secteurFormInner', '{% url "ajouter_secteur" %}', 'id_secteur');
     handleFormSubmit('#clientFormInner', '{% url "ajouter_client" %}', 'id_client');
-    handleFormSubmit('#equipeFormInner', '{% url "ajouter_equipe" %}', 'id_equipe');
-    handleFormSubmit('#arretFormInner', '{% url "ajouter_arret" %}', 'id_arret');
-    handleFormSubmit('#subtypeArretFormInner', '{% url "ajouter_subtype_arret" %}', 'id_subtype_arret');
-    handleFormSubmit('#detailSubtypeArretFormInner', '{% url "ajouter_detail_subtype_arret" %}', 'id_detail_subtype_arret');
     handleFormSubmit('#moyenFormInner', '{% url "ajouter_moyen" %}', 'id_moyen');
 });
 </script>

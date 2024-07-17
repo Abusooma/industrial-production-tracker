@@ -353,8 +353,10 @@
         var obi = parseInt($("#obi_value").val() || 0);
 
         // Calcul du temps de dépassement
-        var dureeTotaleEnMinutes = heures + minutes/60;
+        var dureeTotaleEnMinutes = heures + minutes / 60;
+
         var tempsDepassement = dureeTotaleEnMinutes - obi; // en minutes
+        console.log(tempsDepassement)
 
         // Mettre à jour le champ Temps de dépassement
         $("#temps_depassement").val(tempsDepassement);

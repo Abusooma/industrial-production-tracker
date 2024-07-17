@@ -112,6 +112,26 @@
             $("#id_secteur").trigger('change');
         }
 
+        // Fonction pour charger les produits basés sur le client sélectionné
+        $('#id_famille').change(function() {
+            var familleId = $(this).val();
+            console.log(familleId);
+            $.ajax({
+                url: '{% url "load_products_by_family" %}',
+                data: {
+                    'famille_id': familleId
+                },
+                success: function(data) {
+                    var produitSelect = $('#id_produit');
+                    produitSelect.empty();
+                    produitSelect.append(new Option('-----------', ''));
+                    $.each(data, function(key, value) {
+                        produitSelect.append('<option value="' + value.id + '">' + value.code_ac + '</option>');
+                    });
+                }
+            });
+        });
+
         // Fonction pour charger les faces du produit en fonction du secteur sélectionné
         $("#id_secteur").change(function() {
             var secteur_id = $(this).val();
@@ -134,6 +154,8 @@
                 $("#id_face_du_produit").html('');
             }
         });
+
+
 
         // Déclenche le changement si un secteur est déjà sélectionné (évite les doublons)
         if ($("#id_secteur").val()) {

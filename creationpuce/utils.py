@@ -3,26 +3,25 @@ from datetime import timedelta
 from creationpuce.models import Production
 
 
+def format_value(value):
+    if value is None:
+        return 0
+    try:
+        return f"{value:.2f}"
+    except (TypeError, ValueError):
+        return value
+
 def get_dates_for_ligne():
-    # Fetch distinct production dates for Ligne
     dates = Production.objects.values_list('date_production__date', flat=True).distinct()
     return [(date.strftime('%Y-%m-%d'), date.strftime('%d/%m/%Y')) for date in dates]
 
 
-def get_weeks_for_ligne():
-    # Fetch distinct week numbers for Ligne
-    weeks = Production.objects.dates('date_production', 'week').distinct()
-    return [(week.strftime('%Y-%W'), f"Semaine {week.isocalendar()[1]}") for week in weeks]
-
-
-def get_weeks_for_secteur():
-    # Fetch distinct week numbers for Secteur
+def get_weeks_for_ligne_or_secteur():
     weeks = Production.objects.dates('date_production', 'week').distinct()
     return [(week.strftime('%Y-%W'), f"Semaine {week.isocalendar()[1]}") for week in weeks]
 
 
 def get_months_for_secteur():
-    # Fetch distinct month numbers for Secteur
     months = Production.objects.dates('date_production', 'month').distinct()
     return [(month.strftime('%Y-%m'), f"Mois {month.strftime('%B')}") for month in months]
 

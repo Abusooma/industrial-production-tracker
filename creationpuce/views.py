@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django import forms
-from datetime import datetime, timedelta
+from datetime import timedelta
+
+from django.contrib.auth.decorators import login_required
 from xhtml2pdf import pisa
 from io import BytesIO
 from django.db.models import Sum, ExpressionWrapper, DecimalField
@@ -16,11 +18,27 @@ from .forms import ProduitCreationForm, ArretForm, ProductionDetailsForm, TempsD
 from .models import Ligne, SubTypeArret, DetailSubTypeArret, Production, Produit, Equipe, FaceProduit, TempsDeCycle, \
     ProductionStepTwo, ArretDeProduction, Moyen, TypeDeChangementDeObjectif, ObjectifChangeOver, Changement
 
-from .utils import get_dates_for_ligne, get_weeks_for_secteur, get_months_for_secteur, get_weeks_for_ligne, \
+from .utils import format_value, get_dates_for_ligne, get_months_for_secteur, get_weeks_for_ligne_or_secteur, \
     prepare_historique_trs_data, prepare_desengagement_data, prepare_pannes_equipement_data, prepare_taux_effectif_data, \
     prepare_arrets_induits_data, prepare_arrets_propres_data
 
 
+def accueil(request):
+    messages.success(request, 'Utilisateur deconnecter avec success ...!')
+    return render(request, 'create/page_acceuil.html')
+
+
+def features(request):
+    return render(request, 'create/features.html')
+
+
+@login_required
+def secteur(request):
+    messages.success(request, 'Utilisateur deconnecter avec success ...!')
+    return render(request, 'create/secteurs.html')
+
+
+@login_required
 def create_produit_step1(request, pk=None):
     if pk is not None:
         production = get_object_or_404(Production, pk=pk)
@@ -44,6 +62,7 @@ def create_produit_step1(request, pk=None):
     return render(request, 'create/index.html', context={'form': form})
 
 
+@login_required
 def create_produit_step2(request):
     production_instance_id = request.session.get('production_instance_id')
 
@@ -57,6 +76,7 @@ def create_produit_step2(request):
 
     equipe_id = production_instance.equipe.id
     secteur_id = production_instance.secteur.id
+    ligne_id = production_instance.ligne.id
 
     if request.method == 'POST':
         form = ProductionDetailsForm(request.POST, secteur_id=secteur_id)
@@ -83,6 +103,7 @@ def create_produit_step2(request):
         'production_instance': production_instance,
         'equipe_id': equipe_id,
         'secteur_id': secteur_id,
+        'ligne_id': ligne_id,
         'message': message,
         'message_type': message_type
     }
@@ -90,6 +111,7 @@ def create_produit_step2(request):
     return render(request, 'create/create_produit_step2.html', context=context)
 
 
+@login_required
 def create_produit_step3(request):
     production_instance_id = request.session.get('production_instance_id')
 
@@ -153,7 +175,7 @@ def objectif_changeover_view(request):
         ObjectifChangeOver,
         TypeDeChangementDeObjectif,
         form=TypeDeChangementDeObjectifForm,
-        extra=3,
+        extra=4,
         can_delete=True
     )
 
@@ -172,8 +194,9 @@ def objectif_changeover_view(request):
     else:
         initial_data = [
             {'changement': Changement.objects.filter(description__icontains='Commun').first()},
+            {'changement': Changement.objects.filter(description__icontains='spécifique').first()},
             {'changement': Changement.objects.filter(description__icontains='Version').first()},
-            {'changement': Changement.objects.filter(description__icontains='spécifique').first()}
+            {'changement': Changement.objects.filter(description__icontains='face').first()}
         ]
         objectif_form = ObjectifChangeOverForm()
         formset = TypeDeChangementDeObjectifFormSet(queryset=TypeDeChangementDeObjectif.objects.none(), instance=None,
@@ -195,7 +218,8 @@ def load_more_temps_de_cycles(request):
 
 def load_products(request):
     client_id = request.GET.get('client_id')
-    products = Produit.objects.filter(client_id=client_id).values('id', 'name')
+    print(client_id)
+    products = Produit.objects.filter(client_id=client_id).values('id', 'code_ac')
     return JsonResponse(list(products), safe=False)
 
 
@@ -257,13 +281,20 @@ def load_horaires(request):
     return JsonResponse({'horaires': horaires.get(equipe.nom, {'debut': [], 'fin': []})})
 
 
+def load_product_by_family(request):
+    famille_id = request.GET.get('famille_id')
+    produit = Produit.objects.filter(famille_id=famille_id).values('id', 'code_ac')
+    return JsonResponse(list(produit), safe=False)
+
+
 def load_tcm(request):
-    secteur_id = request.GET.get('secteur_id')
+    ligne_id = request.GET.get('ligne_id')
     produit_id = request.GET.get('produit_id')
     face_id = request.GET.get('face_id')
+    print(ligne_id, produit_id, face_id)
 
     try:
-        tcm = TempsDeCycle.objects.filter(secteur_id=secteur_id, produit_id=produit_id, face_id=face_id).last().tcm
+        tcm = TempsDeCycle.objects.filter(ligne_id=ligne_id, produit_id=produit_id, face_id=face_id).last().tcm
         return JsonResponse({'tcm': tcm})
     except TempsDeCycle.DoesNotExist:
         return JsonResponse({'tcm': None}, status=404)
@@ -289,20 +320,14 @@ def manageBtnFinish(request):
 
 
 def get_obi_value(request):
-    secteur = request.GET.get('secteur')
     ligne = request.GET.get('ligne')
     client = request.GET.get('client')
-    produit = request.GET.get('produit')
-    face_du_produit_id = request.GET.get('face_du_produit')
     changement = request.GET.get('changement')
 
     try:
         objectif_change_over = ObjectifChangeOver.objects.filter(
-            secteur=secteur,
             ligne=ligne,
             client=client,
-            produit=produit,
-            face_du_produit=face_du_produit_id
         ).last()
 
         type_changement_objectif = objectif_change_over.values.filter(
@@ -408,11 +433,11 @@ def generate_report_form(request, report_type):
     elif report_type == 'weekly_line':
         form.fields['ligne'].required = True
         form.fields['secteur'].widget = forms.HiddenInput()
-        form.fields['date'].widget = forms.Select(choices=get_weeks_for_ligne())
+        form.fields['date'].widget = forms.Select(choices=get_weeks_for_ligne_or_secteur())
     elif report_type == 'weekly_sector':
         form.fields['secteur'].required = True
         form.fields['ligne'].widget = forms.HiddenInput()
-        form.fields['date'].widget = forms.Select(choices=get_weeks_for_secteur())
+        form.fields['date'].widget = forms.Select(choices=get_weeks_for_ligne_or_secteur())
     elif report_type == 'monthly_sector':
         form.fields['secteur'].required = True
         form.fields['ligne'].widget = forms.HiddenInput()
@@ -430,15 +455,6 @@ def generate_report_form(request, report_type):
     return render(request, 'create/index_report.html', context)
 
 
-def format_value(value):
-    if value is None:
-        return 0
-    try:
-        return f"{value:.2f}"
-    except (TypeError, ValueError):
-        return value
-
-
 def generate_daily_line_pdf(request):
     if request.method == 'POST':
         form = ReportForm(request.POST)
@@ -446,7 +462,7 @@ def generate_daily_line_pdf(request):
             ligne = form.cleaned_data['ligne']
             date = form.cleaned_data['date']
 
-            # Récupérer les données nécessaires
+            # Récupérer les do nnées nécessaires
             production = Production.objects.filter(ligne=ligne, date_production__date=date).first()
 
             if not production:
@@ -556,7 +572,6 @@ def generate_weekly_line_report(request):
             ligne = form.cleaned_data['ligne']
             date = form.cleaned_data['date']
 
-            # La date est déjà au format datetime grâce à clean_date
             start_of_week = date - timedelta(days=date.weekday())
             end_of_week = start_of_week + timedelta(days=6)
 
