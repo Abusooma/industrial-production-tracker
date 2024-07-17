@@ -2,147 +2,150 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Données_TRG_Journalier</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport Journalier - {{ ligne }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
+            font-size: 12px;
             font-family: Arial, sans-serif;
-            font-size: 10pt;
-            line-height: 1.3;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
+        .table {
+            border: 2px solid #dee2e6;
         }
-        .section {
-            margin-bottom: 20px;
+        .table th, .table td {
+            padding: 0.5rem;
+            border: 1px solid #dee2e6;
+        }
+        .table thead th {
+            background-color: #4a69bd;
+            color: white;
+            font-weight: bold;
+        }
+        .card {
+            margin-bottom: 1.5rem;
+            border: 1px solid #bdc3c7;
+        }
+        .card-header {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        .bg-light-blue {
+            background-color: #ebf5fb;
         }
         .section-title {
-            font-weight: bold;
-            margin-bottom: 10px;
+            background-color: #2980b9;
+            color: white;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 5px;
-        }
-        .data-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-        .data-label {
-            font-weight: bold;
-        }
-        .data-value {
-            text-align: right;
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #f2f6f9;
         }
     </style>
 </head>
 <body>
-<div class="header">
-    <h1>Données_TRG_Journalier</h1>
-    <p>Secteur..: {{ secteur }}</p>
-    <p>Date.....: {{ date }}</p>
-    <p>Ligne....: {{ ligne }}</p>
-</div>
+<div class="container-fluid mt-3">
+    <h1 class="text-center mb-4">Rapport Journalier - {{ ligne }}</h1>
 
-<div class="section">
-    <div class="section-title">I-Données Générales</div>
-    <div class="data-row">
-        <span class="data-label">Temps d'Ouverture............................  </span>
-        <span class="data-value">{{ temps_ouverture }} Heures</span>
+    <div class="row mb-3">
+        <div class="col-md-4"><strong>Secteur:</strong> {{ secteur }}</div>
+        <div class="col-md-4"><strong>Date:</strong> {{ date }}</div>
+        <div class="col-md-4"><strong>Ligne:</strong> {{ ligne }}</div>
     </div>
-    <br>
-    <div class="data-row">
-        <span class="data-label">Temps Utile Fonct............................ </span>
-        <span class="data-value">{{ tuf }} Heures</span>
-    </div>
-    <br>
-    <div class="data-row">
-        <span class="data-label">Arrêts............................  </span>
-        <span class="data-value">{{ arrets }} Heures</span>
-    </div>
-    <br>
-    <div class="data-row">
-        <span class="data-label">Ecart de Cadence............................  </span>
-        <span class="data-value">{{ ecart_cadence }} Heures</span>
-    </div>
-    <div class="data-row">
-        <span class="data-label">Ecart de Cadence............................  </span>
-        <span class="data-value">{{ ecart_cadence_percentage }}%</span>
-    </div>
-    <br>
-    <div class="data-row">
-        <span class="data-label">Taux de Rend. Global (TRG)............................  </span>
-        <span class="data-value">{{ trg }}% (Objectif = 80%)</span>
-    </div>
-</div>
 
-<div class="section">
-    <div class="section-title">II-Les Désengagements</div>
-    {% for desengagement in desengagements %}
-    <div class="data-row">
-        <span class="data-label">{{ desengagement.subtype_arret__description|default_if_none:"N/A" }} {{ desengagement.detail_sub_type_arret__description|default_if_none:"N/A" }}</span>
-        <span class="data-value">{{ desengagement.duree|default_if_none:"N/A" }} Heures</span>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Données Générales</h5>
+        </div>
+        <div class="card-body bg-light-blue">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Temps d'Ouverture:</strong> {{ temps_ouverture }} Heures</p>
+                    <p><strong>Temps Utile Fonct:</strong> {{ tuf }} Heures</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Arrêts:</strong> {{ arrets }} Heures</p>
+                    <p><strong>Ecart de Cadence:</strong> {{ ecart_cadence }} Heures</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Ecart de Cadence (%):</strong> {{ ecart_cadence_percentage }}%</p>
+                    <p><strong>Taux de Rend. Global (TRG):</strong> {{ trg }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for arret_type, arrets in arrets_data.items %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">{{ arret_type|title }}</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-bordered">
+                <thead>
+                <tr>
+                    <th>Subtype</th>
+                    <th>Detail</th>
+                    <th>Durée (Heures)</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for arret in arrets %}
+                <tr>
+                    <td>{{ arret.subtype_arret__description }}</td>
+                    <td>{{ arret.detail_sub_type_arret__description }}</td>
+                    <td>{{ arret.duree }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% endfor %}
-</div>
 
-<div class="section">
-    <div class="section-title">III-Les Arrêts Propres</div>
-    {% for arret in arrets_propres %}
-    <div class="data-row">
-        <span class="data-label">{{ arret.subtype_arret__description|default_if_none:"N/A" }} {{ arret.detail_sub_type_arret__description|default_if_none:"N/A" }}</span>
-        <span class="data-value">{{ arret.duree|default_if_none:"N/A" }} Heures</span>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Détail des données par Produit</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-bordered">
+                <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Face</th>
+                    <th>TCM</th>
+                    <th>Qte_FS</th>
+                    <th>Qte_FC</th>
+                    <th>TO</th>
+                    <th>TUF</th>
+                    <th>Arrêts</th>
+                    <th>Ecart</th>
+                    <th>Ecart (%)</th>
+                    <th>TRG</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for detail in details_produits %}
+                <tr>
+                    <td>{{ detail.produit__code_ac }}</td>
+                    <td>{{ detail.face_du_produit__nom }}</td>
+                    <td>{{ detail.tcm }}</td>
+                    <td>{{ detail.quantity_fs }}</td>
+                    <td>{{ detail.quantity_fc }}</td>
+                    <td>{{ detail.temps_ouverture }}</td>
+                    <td>{{ detail.tuf }}</td>
+                    <td>{{ detail.arrets }}</td>
+                    <td>{{ detail.ecart }}</td>
+                    <td>{{ detail.ecart_percentage }}%</td>
+                    <td>{{ detail.trg }}%</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-    {% endfor %}
-</div>
-
-
-<div class="section">
-    <div class="section-title">IV-Detail des données par Produit</div>
-    <table>
-        <thead>
-        <tr>
-            <th>Produit</th>
-            <th>TCM</th>
-            <th>Qte_FS</th>
-            <th>Qte_FC</th>
-            <th>TO</th>
-            <th>TUF</th>
-            <th>Arrêts</th>
-            <th>Ecart</th>
-            <th>Ecart(%)</th>
-            <th>TRG</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for produit in details_produits %}
-        <tr>
-            <td>{{ produit.produit__code_ac|default_if_none:"N/A" }} {{ produit.face_du_produit__nom|default_if_none:"N/A" }}
-            </td>
-            <td>{{ produit.tcm|default_if_none:"N/A" }}</td>
-            <td>{{ produit.quantity_fs|default_if_none:"N/A" }}</td>
-            <td>{{ produit.quantity_fc|default_if_none:"N/A" }}</td>
-            <td>{{ produit.temps_ouverture|default_if_none:"N/A" }}</td>
-            <td>{{ produit.tuf|default_if_none:"N/A" }}</td>
-            <td>{{ produit.arrets|default_if_none:"N/A" }}</td>
-            <td>{{ produit.ecart|default_if_none:"N/A" }}</td>
-            <td>{{ produit.ecart_percentage|default_if_none:"N/A" }}%</td>
-            <td>{{ produit.trg|default_if_none:"N/A" }}%</td>
-        </tr>
-        {% endfor %}
-
-        </tbody>
-    </table>
-</div>
-
-<div class="section">
-    <div class="section-title">V-Commentaires</div>
-    <p>{{ commentaires }}</p>
 </div>
 </body>
 </html>

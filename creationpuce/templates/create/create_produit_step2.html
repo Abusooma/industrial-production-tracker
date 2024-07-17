@@ -255,14 +255,14 @@
     const updateTCM = () => {
         const ligne_id = '{{ ligne_id }}';
         const produit_id = $('#id_produit').val();
-        const face_id = $('#id_face_du_produit').val();
-        if (ligne_id && produit_id && face_id) {
+        const client_id = $('#id_client').val();
+        if (ligne_id && produit_id && client_id) {
             $.ajax({
                 url: '{% url "load_tcm" %}',
                 data: {
                     'ligne_id': ligne_id,
                     'produit_id': produit_id,
-                    'face_id': face_id
+                    'client_id': client_id
                 },
                 success: (data) => {
                     if (data.tcm) {

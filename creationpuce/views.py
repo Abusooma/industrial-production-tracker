@@ -1,26 +1,32 @@
-from django.contrib import messages
-from django import forms
 from datetime import timedelta
 
+# import pour Django
+from django.contrib import messages
+from django import forms
 from django.contrib.auth.decorators import login_required
-from xhtml2pdf import pisa
-from io import BytesIO
-from django.db.models import Sum, ExpressionWrapper, DecimalField
+from django.db.models import Sum, ExpressionWrapper, FloatField
 from django.db.models.functions import Coalesce
 from django.template.loader import render_to_string, get_template
 from django.http import JsonResponse, HttpResponse
 from django.core import serializers
 from django.forms import inlineformset_factory
 from django.shortcuts import render, redirect, get_object_or_404
-from .forms import ProduitCreationForm, ArretForm, ProductionDetailsForm, TempsDeCycleForm, ObjectifChangeOverForm, \
-    TypeDeChangementDeObjectifForm, ProduitForm, LigneForm, SecteurForm, ArretSimpleForm, SubTypeArretForm, \
-    DetailSubTypeArretForm, MoyenForm, EquipeForm, ClientForm, ReportForm
-from .models import Ligne, SubTypeArret, DetailSubTypeArret, Production, Produit, Equipe, FaceProduit, TempsDeCycle, \
-    ProductionStepTwo, ArretDeProduction, Moyen, TypeDeChangementDeObjectif, ObjectifChangeOver, Changement
 
-from .utils import format_value, get_dates_for_ligne, get_months_for_secteur, get_weeks_for_ligne_or_secteur, \
-    prepare_historique_trs_data, prepare_desengagement_data, prepare_pannes_equipement_data, prepare_taux_effectif_data, \
-    prepare_arrets_induits_data, prepare_arrets_propres_data
+# import pour le PDF
+from xhtml2pdf import pisa
+from io import BytesIO
+
+from .forms import (ProduitCreationForm, ArretForm, ProductionDetailsForm, TempsDeCycleForm, ObjectifChangeOverForm,
+                    TypeDeChangementDeObjectifForm, ProduitForm, LigneForm, SecteurForm, ArretSimpleForm,
+                    SubTypeArretForm, DetailSubTypeArretForm, MoyenForm, EquipeForm, ClientForm, ReportForm)
+from .models import (Ligne, SubTypeArret, DetailSubTypeArret, Production, Produit, Equipe, FaceProduit, TempsDeCycle,
+                     ProductionStepTwo, ArretDeProduction, Moyen, TypeDeChangementDeObjectif, ObjectifChangeOver,
+                     Changement)
+
+from .utils import (format_value, get_dates_for_ligne, get_months_for_secteur, get_weeks_for_ligne_or_secteur,
+                    prepare_historique_trs_data, prepare_desengagement_data, prepare_pannes_equipement_data,
+                    prepare_taux_effectif_data, prepare_arrets_induits_data, prepare_arrets_propres_data,
+                    get_arrets_data, get_product_details)
 
 
 def accueil(request):
@@ -208,14 +214,6 @@ def objectif_changeover_view(request):
     })
 
 
-def load_more_temps_de_cycles(request):
-    offset = int(request.GET.get('offset', 0))
-    limit = 3
-    temps_de_cycles = TempsDeCycle.objects.all()[offset:offset + limit]
-    serialized_temps_de_cycles = serializers.serialize('json', temps_de_cycles)
-    return JsonResponse({'temps_de_cycles': serialized_temps_de_cycles})
-
-
 def load_products(request):
     client_id = request.GET.get('client_id')
     print(client_id)
@@ -290,11 +288,10 @@ def load_product_by_family(request):
 def load_tcm(request):
     ligne_id = request.GET.get('ligne_id')
     produit_id = request.GET.get('produit_id')
-    face_id = request.GET.get('face_id')
-    print(ligne_id, produit_id, face_id)
+    client_id = request.GET.get('client_id')
 
     try:
-        tcm = TempsDeCycle.objects.filter(ligne_id=ligne_id, produit_id=produit_id, face_id=face_id).last().tcm
+        tcm = TempsDeCycle.objects.filter(ligne_id=ligne_id, client_id=client_id, produit_id=produit_id).first().tcm
         return JsonResponse({'tcm': tcm})
     except TempsDeCycle.DoesNotExist:
         return JsonResponse({'tcm': None}, status=404)
@@ -462,54 +459,39 @@ def generate_daily_line_pdf(request):
             ligne = form.cleaned_data['ligne']
             date = form.cleaned_data['date']
 
-            # Récupérer les do nnées nécessaires
-            production = Production.objects.filter(ligne=ligne, date_production__date=date).first()
+            productions = Production.objects.filter(ligne=ligne, date_production__date=date)
 
-            if not production:
+            if not productions.exists():
                 return HttpResponse("Aucune production trouvée pour cette date et cette ligne.")
 
-            # Calculer les valeurs nécessaires
-            temps_ouverture = production.sum_temps_ouverture()
-            tuf = production.calculate_tu()
-            arrets = production.sum_all_arrets()
-            tr = production.calculate_tr()
-            tf = production.calculate_tf(tr)
-            ecart_cadence = production.calculate_ecart_de_cadence(tf)
-            trg = production.calculate_trs()
+            # Calculer les valeurs agrégées
+            temps_ouverture = sum(p.sum_temps_ouverture() for p in productions)
+            tuf = sum(p.calculate_tu() for p in productions)
+            arrets = productions.aggregate(
+                total=ExpressionWrapper(
+                    Coalesce(Sum('arretdeproduction__duree_en_heure'), 0) +
+                    Coalesce(Sum('arretdeproduction__duree_en_minute'), 0) / 60,
+                    output_field=FloatField()
+                )
+            )['total'] or 0
+
+            tr = sum(p.calculate_tr() for p in productions)
+            tf = sum(p.calculate_tf(p.calculate_tr()) for p in productions)
+            ecart_cadence = sum(p.calculate_ecart_de_cadence(p.calculate_tf(p.calculate_tr())) for p in productions)
+            trg = sum(p.calculate_trs() for p in productions) / len(productions) if productions else 0
+
+            # Désengagements, Arrêts Propres et Arrêts Induits
+            arrets_data = {
+                'desengagements': get_arrets_data(productions, "engagement"),
+                'arrets_propres': get_arrets_data(productions, "propre"),
+                'arrets_induits': get_arrets_data(productions, "induit")
+            }
 
             # Détails des données par Produit
-            details_produits = []
-            for step in ProductionStepTwo.objects.filter(production=production):
-                step_temps_ouverture = step.temps_ouverture()
-                step_tuf = step.calculate_tuf()
-
-                temps_de_cycle = TempsDeCycle.objects.filter(secteur=production.secteur, produit=step.produit).first()
-                tcm = temps_de_cycle.tcm if temps_de_cycle else 0
-
-                step_arrets = ArretDeProduction.objects.filter(production=production).aggregate(
-                    total_arrets=Coalesce(Sum('duree_en_heure'), 0) + Coalesce(Sum('duree_en_minute'), 0) / 60
-                )['total_arrets']
-
-                step_ecart = step_temps_ouverture - step_tuf
-                step_ecart_percentage = (step_ecart / step_temps_ouverture * 100) if step_temps_ouverture else 0
-                step_trg = (step_tuf / step_temps_ouverture * 100) if step_temps_ouverture else 0
-
-                details_produits.append({
-                    'produit__code_ac': step.produit.code_ac,
-                    'face_du_produit__nom': step.face_du_produit.nom,
-                    'tcm': format_value(tcm),
-                    'quantity_fs': step.quantity_fs,
-                    'quantity_fc': step.quantity_fc,
-                    'temps_ouverture': format_value(step_temps_ouverture),
-                    'tuf': format_value(step_tuf),
-                    'arrets': format_value(step_arrets),
-                    'ecart': format_value(step_ecart),
-                    'ecart_percentage': format_value(step_ecart_percentage),
-                    'trg': format_value(step_trg)
-                })
+            details_produits = get_product_details(productions)
 
             context = {
-                'secteur': production.secteur.nom_secteur,
+                'secteur': productions.first().secteur.nom_secteur if productions else "",
                 'date': date,
                 'ligne': ligne.nom,
                 'temps_ouverture': format_value(temps_ouverture),
@@ -519,32 +501,7 @@ def generate_daily_line_pdf(request):
                 'ecart_cadence_percentage': format_value(
                     ((ecart_cadence / temps_ouverture) * 100) if temps_ouverture else 0),
                 'trg': format_value(trg),
-
-                # Désengagements
-                'desengagements': ArretDeProduction.objects.filter(
-                    production=production,
-                    type_arret__nom__icontains="engagement"
-                ).values('subtype_arret__description', 'detail_sub_type_arret__description').annotate(
-                    duree=ExpressionWrapper(
-                        Coalesce(Sum('duree_en_heure'), 0, output_field=DecimalField()) + Coalesce(
-                            Sum('duree_en_minute'), 0, output_field=DecimalField()) / 60,
-                        output_field=DecimalField(max_digits=10, decimal_places=2)
-                    )
-                ),
-
-                # Arrêts Propres
-                'arrets_propres': ArretDeProduction.objects.filter(
-                    production=production,
-                    type_arret__nom__icontains="propre"
-                ).values('subtype_arret__description', 'detail_sub_type_arret__description').annotate(
-                    duree=ExpressionWrapper(
-                        Coalesce(Sum('duree_en_heure'), 0, output_field=DecimalField()) + Coalesce(
-                            Sum('duree_en_minute'), 0, output_field=DecimalField()) / 60,
-                        output_field=DecimalField(max_digits=10, decimal_places=2)
-                    )
-                ),
-
-                # Détails des données par Produit
+                'arrets_data': arrets_data,
                 'details_produits': details_produits
             }
 

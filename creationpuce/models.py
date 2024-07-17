@@ -243,7 +243,7 @@ class ProductionStepTwo(models.Model):
         quantity_fc = self.quantity_fc or 0
         defaults = self.defaults or 0
         tcm = 0
-        temps_de_cycle = TempsDeCycle.objects.filter(secteur=self.production.secteur, produit=self.produit).first()
+        temps_de_cycle = TempsDeCycle.objects.filter(ligne=self.production.ligne, produit=self.produit).first()
         if temps_de_cycle:
             tcm = temps_de_cycle.tcm
         total_quantity = quantity_fs + quantity_fc + defaults
@@ -257,7 +257,7 @@ class ProductionStepTwo(models.Model):
     def non_quality(self):
         defaults = self.defaults or 0
         tcm = 0
-        temps_de_cycle = TempsDeCycle.objects.filter(secteur=self.production.secteur, produit=self.produit).last()
+        temps_de_cycle = TempsDeCycle.objects.filter(ligne=self.production.ligne, produit=self.produit).last()
         if temps_de_cycle:
             tcm = temps_de_cycle.tcm
         return float(defaults * tcm)
