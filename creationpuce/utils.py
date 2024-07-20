@@ -81,6 +81,19 @@ def get_product_details(productions):
     return details
 
 
+def get_pannes_equipement_data(productions):
+    return ArretDeProduction.objects.filter(
+        production__in=productions,
+        type_arret__nom__icontains='panne'
+    ).values('moyen__nom').annotate(
+        duree=ExpressionWrapper(
+            Coalesce(Sum('duree_en_heure'), 0, output_field=FloatField()) +
+            Coalesce(Sum('duree_en_minute'), 0, output_field=FloatField()) / 60,
+            output_field=FloatField()
+        )
+    ).order_by('-duree')[:5]
+
+
 # Fonctions pour préparer les données des graphiques
 def prepare_desengagement_data(productions):
     return {

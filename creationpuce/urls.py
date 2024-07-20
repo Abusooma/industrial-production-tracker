@@ -23,7 +23,6 @@ urlpatterns = [
     path('manage-display-btnfinish/', views.manageBtnFinish, name='manage-btn-finish'),
 
     path('saisir-temps-de-cycle/', views.saisir_temps_de_cycle, name='saisir_temps_de_cycle'),
-    path('load-more-temps-de-cycles/', views.load_more_temps_de_cycles, name='load_more_temps_de_cycles'),
 
     path('objectif_changeover/', views.objectif_changeover_view, name='objectif_changeover_view'),
     path('get-obi-value/', views.get_obi_value, name='get_obi_value'),

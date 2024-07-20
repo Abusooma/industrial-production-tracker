@@ -1,6 +1,16 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
-# import pour Django
+import matplotlib.pyplot as plt
+import matplotlib
+import pytz
+
+from django.conf import settings
+
+matplotlib.use('Agg')
+
+import io
+import base64
+
 from django.contrib import messages
 from django import forms
 from django.contrib.auth.decorators import login_required
@@ -24,13 +34,10 @@ from .models import (Ligne, SubTypeArret, DetailSubTypeArret, Production, Produi
                      Changement)
 
 from .utils import (format_value, get_dates_for_ligne, get_months_for_secteur, get_weeks_for_ligne_or_secteur,
-                    prepare_historique_trs_data, prepare_desengagement_data, prepare_pannes_equipement_data,
-                    prepare_taux_effectif_data, prepare_arrets_induits_data, prepare_arrets_propres_data,
-                    get_arrets_data, get_product_details)
+                    get_pannes_equipement_data, get_arrets_data, get_product_details)
 
 
 def accueil(request):
-    messages.success(request, 'Utilisateur deconnecter avec success ...!')
     return render(request, 'create/page_acceuil.html')
 
 
@@ -40,7 +47,6 @@ def features(request):
 
 @login_required
 def secteur(request):
-    messages.success(request, 'Utilisateur deconnecter avec success ...!')
     return render(request, 'create/secteurs.html')
 
 
@@ -522,6 +528,78 @@ def generate_daily_line_pdf(request):
     return HttpResponse("Méthode non autorisée")
 
 
+def generate_horizontal_bar_chart(data, title):
+    # Trier les données par durée décroissante
+    sorted_data = sorted(data, key=lambda x: x['duree'], reverse=True)
+
+    # Calculer la hauteur de la figure en fonction du nombre d'éléments
+    fig_height = max(6, len(sorted_data) * 0.5)
+
+    fig, ax = plt.subplots(figsize=(12, fig_height))
+
+    if sorted_data:
+        bars = ax.barh([item['subtype_arret__description'] for item in sorted_data],
+                       [item['duree'] for item in sorted_data],
+                       height=0.5)  # Réduire la hauteur des barres
+
+        ax.set_title(title)
+        ax.set_xlabel('Durée (heures)')
+        ax.set_ylabel('Sous-type d\'arrêt')
+
+        # Ajuster la taille des étiquettes de l'axe y
+        ax.tick_params(axis='y', labelsize=8)
+
+        # Ajouter les valeurs à la fin de chaque barre
+        for bar in bars:
+            width = bar.get_width()
+            ax.text(width, bar.get_y() + bar.get_height() / 2, f'{width:.2f}',
+                    ha='left', va='center', fontsize=8, fontweight='bold')
+    else:
+        ax.text(0.5, 0.5, 'No data available', horizontalalignment='center', verticalalignment='center')
+
+    plt.tight_layout()
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
+    plt.close(fig)
+    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+
+def generate_bar_chart(data, title):
+    # Trier les données par durée décroissante
+    sorted_data = sorted(data, key=lambda x: x['duree'], reverse=True)
+
+    # Calculer la hauteur de la figure en fonction du nombre d'éléments
+    fig_height = max(6, len(sorted_data) * 0.5)
+
+    fig, ax = plt.subplots(figsize=(12, fig_height))
+
+    if sorted_data:
+        bars = ax.barh([item['moyen__nom'] for item in sorted_data],
+                       [item['duree'] for item in sorted_data],
+                       height=0.5)  # Réduire la hauteur des barres
+
+        ax.set_title(title)
+        ax.set_xlabel('Durée (heures)')
+        ax.set_ylabel('Équipement')
+
+        # Ajuster la taille des étiquettes de l'axe y
+        ax.tick_params(axis='y', labelsize=8)
+
+        # Ajouter les valeurs à la fin de chaque barre
+        for bar in bars:
+            width = bar.get_width()
+            ax.text(width, bar.get_y() + bar.get_height() / 2, f'{width:.2f}',
+                    ha='left', va='center', fontsize=8, fontweight='bold')
+    else:
+        ax.text(0.5, 0.5, 'No data available', horizontalalignment='center', verticalalignment='center')
+
+    plt.tight_layout()
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
+    plt.close(fig)
+    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+
 def generate_weekly_line_report(request):
     if request.method == 'POST':
         form = ReportForm(request.POST, report_type='weekly_line')
@@ -529,36 +607,52 @@ def generate_weekly_line_report(request):
             ligne = form.cleaned_data['ligne']
             date = form.cleaned_data['date']
 
-            start_of_week = date - timedelta(days=date.weekday())
+            timezone = pytz.timezone(settings.TIME_ZONE)
+
+            # Convert date to datetime
+            date = datetime.combine(date, datetime.min.time())
+            start_of_week = timezone.localize(date - timedelta(days=date.weekday()))
             end_of_week = start_of_week + timedelta(days=6)
 
-            # Récupérer toutes les productions de la semaine pour cette ligne
             productions = Production.objects.filter(
                 ligne=ligne,
                 date_production__range=[start_of_week, end_of_week]
             )
 
-            # Calculer les métriques
-            trs = sum(p.calculate_trs() for p in productions) / len(productions) if productions else 0
+            if not productions.exists():
+                return HttpResponse('Aucune donnée de production trouvée pour la période sélectionnée.', status=404)
+
             tu = sum(p.calculate_tu() for p in productions)
             to = sum(p.sum_temps_ouverture() for p in productions)
             tr = sum(p.calculate_tr() for p in productions)
             tf = sum(p.calculate_tf(p.calculate_tr()) for p in productions)
+            tn = sum(p.calculate_tn(p.calculate_tf(p.calculate_tr()),
+                                    p.calculate_ecart_de_cadence(p.calculate_tf(p.calculate_tr()))) for p in
+                     productions)
+
+            taux_qualite = (tu / tn) * 100 if tn else 0
+            taux_performance = (tn / tf) * 100 if tf else 0
+            disponibilite_operationnelle = (tf / tr) * 100 if tr else 0
+            taux_strategie_engagement = (tr / to) * 100 if to else 0
+            taux_charge = (tr / to) * 100 if to else 0
+
+            trs = (taux_qualite * taux_performance * disponibilite_operationnelle) / 10000
+
             ecart_cadence = sum(p.calculate_ecart_de_cadence(p.calculate_tf(p.calculate_tr())) for p in productions)
             desengagement = sum(p.sum_desengagement() for p in productions)
             arrets_propres = sum(p.sum_arret_propre() for p in productions)
             arrets_induits = sum(p.sum_arret_induit() for p in productions)
             non_qualite = sum(p.sum_non_qualite() for p in productions)
 
-            # Préparer les données pour les graphiques
-            desengagement_data = prepare_desengagement_data(productions)
-            arrets_induits_data = prepare_arrets_induits_data(productions)
-            arrets_propres_data = prepare_arrets_propres_data(productions)
-            pannes_equipement_data = prepare_pannes_equipement_data(productions)
-            historique_trs_data = prepare_historique_trs_data(ligne, end_of_week)
-            taux_effectif_data = prepare_taux_effectif_data(productions)
+            desengagement_chart = generate_horizontal_bar_chart(get_arrets_data(productions, "engagement"),
+                                                                "Désengagement des moyens (Heures)")
+            arrets_induits_chart = generate_horizontal_bar_chart(get_arrets_data(productions, "induit"),
+                                                                 "Les Arrêts Induits (Heures)")
+            arrets_propres_chart = generate_horizontal_bar_chart(get_arrets_data(productions, "propre"),
+                                                                 "Les Arrêts Propres (Heures)")
+            pannes_equipement_chart = generate_bar_chart(get_pannes_equipement_data(productions),
+                                                         "Pareto des pannes par Equipement (Heures)")
 
-            # Préparer le contexte pour le template
             context = {
                 'ligne': ligne,
                 'semaine': start_of_week.strftime('%Y-%W'),
@@ -567,36 +661,36 @@ def generate_weekly_line_report(request):
                 'to': to,
                 'tr': tr,
                 'tf': tf,
+                'tn': tn,
+                'taux_qualite': taux_qualite,
+                'taux_performance': taux_performance,
+                'disponibilite_operationnelle': disponibilite_operationnelle,
+                'taux_strategie_engagement': taux_strategie_engagement,
+                'taux_charge': taux_charge,
                 'ecart_cadence': ecart_cadence,
                 'desengagement': desengagement,
                 'arrets_propres': arrets_propres,
                 'arrets_induits': arrets_induits,
                 'non_qualite': non_qualite,
-                'desengagement_data': desengagement_data,
-                'arrets_induits_data': arrets_induits_data,
-                'arrets_propres_data': arrets_propres_data,
-                'pannes_equipement_data': pannes_equipement_data,
-                'historique_trs_data': historique_trs_data,
-                'taux_effectif_data': taux_effectif_data,
+                'desengagement_chart': desengagement_chart,
+                'arrets_induits_chart': arrets_induits_chart,
+                'arrets_propres_chart': arrets_propres_chart,
+                'pannes_equipement_chart': pannes_equipement_chart,
+                'product_details': get_product_details(productions),
             }
 
-            # Générer le PDF
-            template = get_template('create/hebdo_par_ligne.html')
+            template = get_template('reports/weekly_line_report.html')
             html = template.render(context)
 
-            # Créer une réponse PDF
             response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = 'inline; filename="rapport_hebdo_{0}_{1}.pdf"'.format(
-                ligne.nom, start_of_week.strftime('%Y-%W'))
+            response[
+                'Content-Disposition'] = f'inline; filename="rapport_hebdo_{ligne.nom}_{start_of_week.strftime("%Y-%W")}.pdf"'
 
-            # Générer le PDF
             pisa_status = pisa.CreatePDF(html, dest=response)
 
             if pisa_status.err:
                 return HttpResponse('Une erreur est survenue lors de la création du PDF', status=500)
 
             return response
-        else:
-            return HttpResponse('Formulaire invalide', status=400)
 
     return HttpResponse('Méthode non autorisée', status=405)
