@@ -66,11 +66,11 @@ industrial-production-tracker/
 ![Page d'accueil](https://github.com/Abusooma/industrial-production-tracker/blob/main/acti1.png)
 *Page d'accueil*
 
-![Formulaire de saisie](/path/to/input_form_screenshot.png)
-![Formulaire de saisie](/path/to/input_form_screenshot.png)
-![Formulaire de saisie](/path/to/input_form_screenshot.png)
-![Formulaire de saisie](/path/to/input_form_screenshot.png)
-![Formulaire de saisie](/path/to/input_form_screenshot.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie1.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie2.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie3.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie4.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie5.png)
 *Formulaire de saisie des données de production*
 
 ## 👤 Auteur
