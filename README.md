@@ -1,6 +1,6 @@
 # Industrial Production Tracker 🚀
 
-![CIPI ACTIA Logo](https://github.com/Abusooma/industrial-production-tracker/blob/main/actia4.png)
+![CIPI ACTIA Logo](https://github.com/Abusooma/industrial-production-tracker/blob/main/.github/actia4.png)
 
 ## 📄 Description
 
@@ -63,14 +63,14 @@ industrial-production-tracker/
 
 ## 📸 Captures d'écran
 
-![Page d'accueil](https://github.com/Abusooma/industrial-production-tracker/blob/main/acti1.png)
+![Page d'accueil](https://github.com/Abusooma/industrial-production-tracker/blob/main/.github/acti1.png)
 *Page d'accueil*
 
-![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie1.png)
-![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie2.png)
-![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie3.png)
-![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie4.png)
-![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/saisie5.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/.github/saisie1.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/.github/saisie2.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/.github/saisie3.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/.github/saisie4.png)
+![Formulaire de saisie](https://github.com/Abusooma/industrial-production-tracker/blob/main/.github/saisie5.png)
 *Formulaire de saisie des données de production*
 
 ## 👤 Auteur
