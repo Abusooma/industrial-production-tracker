@@ -67,6 +67,10 @@ industrial-production-tracker/
 *Page d'accueil*
 
 ![Formulaire de saisie](/path/to/input_form_screenshot.png)
+![Formulaire de saisie](/path/to/input_form_screenshot.png)
+![Formulaire de saisie](/path/to/input_form_screenshot.png)
+![Formulaire de saisie](/path/to/input_form_screenshot.png)
+![Formulaire de saisie](/path/to/input_form_screenshot.png)
 *Formulaire de saisie des données de production*
 
 ## 👤 Auteur
