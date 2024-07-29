@@ -63,7 +63,7 @@ industrial-production-tracker/
 
 ## 📸 Captures d'écran
 
-![Page d'accueil](/path/to/homepage_screenshot.png)
+![Page d'accueil](https://github.com/Abusooma/industrial-production-tracker/blob/main/acti1.png)
 *Page d'accueil*
 
 ![Formulaire de saisie](/path/to/input_form_screenshot.png)
