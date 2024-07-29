@@ -1,6 +1,6 @@
 # Industrial Production Tracker 🚀
 
-![CIPI ACTIA Logo](/path/to/logo.png)
+![CIPI ACTIA Logo](https://github.com/Abusooma/industrial-production-tracker/blob/main/actia4.png)
 
 ## 📄 Description
 
