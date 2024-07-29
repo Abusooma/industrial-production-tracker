@@ -71,4 +71,4 @@ industrial-production-tracker/
 
 ## 👤 Auteur
 
-[Votre Nom] - [Votre Email]
+Aboubacar Soumah - soumahaboubacarsopra@gmail.com
