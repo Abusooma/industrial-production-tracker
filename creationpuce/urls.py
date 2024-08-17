@@ -41,4 +41,5 @@ urlpatterns = [
     path('generate_report_form/<str:report_type>/', views.generate_report_form, name='generate_report_form'),
     path('generate_daily_line_pdf/', views.generate_daily_line_pdf, name='generate_daily_line_pdf'),
     path('report/generate_weekly_line_pdf/', views.generate_weekly_line_report, name='generate_weekly_line_pdf'),
+    path('report/weekly-sector/', views.generate_weekly_sector_report, name='weekly_sector_report'),
 ]

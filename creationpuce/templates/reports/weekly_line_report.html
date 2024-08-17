@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Rapport Hebdomadaire</title>
+    <title>Rapport Hebdomadaire - {{ ligne.nom }} - Semaine {{ semaine }}</title>
     <style>
+        /* Garder les styles existants */
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -20,26 +21,17 @@
             padding: 10px;
             border-radius: 5px;
         }
-        .indicators, .time-distribution, .stoppages, .pareto, .products {
+        .indicators, .time-distribution {
             width: 100%;
             margin: 20px 0;
             border-collapse: collapse;
         }
-        .indicators th, .indicators td, .time-distribution th, .time-distribution td,
-        .stoppages th, .stoppages td, .pareto th, .pareto td, .products th, .products td {
+        .indicators th, .indicators td, .time-distribution th, .time-distribution td {
             border: 1px solid #ddd;
             padding: 8px;
         }
-        .indicators th, .time-distribution th, .stoppages th, .pareto th, .products th {
+        .indicators th, .time-distribution th {
             background-color: #f2f2f2;
-        }
-        .graph {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .graph img {
-            max-width: 100%;
-            height: auto;
         }
         .chart-grid {
             display: flex;
@@ -57,136 +49,104 @@
     </style>
 </head>
 <body>
-<h1>Rapport Hebdomadaire - {{ ligne.nom }} - Semaine {{ semaine }}</h1>
-<div class="section">
-    <h2>Indicateurs de Performance</h2>
-    <table class="indicators">
-        <tr>
-            <th>TRS</th>
-            <td>{{ trs|floatformat:2 }}%</td>
-        </tr>
-        <tr>
-            <th>Taux de Qualité</th>
-            <td>{{ taux_qualite|floatformat:2 }}%</td>
-        </tr>
-        <tr>
-            <th>Taux de Performance</th>
-            <td>{{ taux_performance|floatformat:2 }}%</td>
-        </tr>
-        <tr>
-            <th>Disponibilité Opérationnelle</th>
-            <td>{{ disponibilite_operationnelle|floatformat:2 }}%</td>
-        </tr>
-        <tr>
-            <th>Taux de Stratégie d'Engagement</th>
-            <td>{{ taux_strategie_engagement|floatformat:2 }}%</td>
-        </tr>
-        <tr>
-            <th>Taux de Charge</th>
-            <td>{{ taux_charge|floatformat:2 }}%</td>
-        </tr>
-    </table>
-</div>
-<div class="section">
-    <h2>Répartition du Temps</h2>
-    <table class="time-distribution">
-        <tr>
-            <th>Temps Utilisé (TU)</th>
-            <td>{{ tu|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <th>Temps Ouverture (TO)</th>
-            <td>{{ to|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <th>Temps Requis (TR)</th>
-            <td>{{ tr|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <th>Temps de Fonctionnement (TF)</th>
-            <td>{{ tf|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <th>Temps Net (TN)</th>
-            <td>{{ tn|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <th>Écart de Cadence</th>
-            <td>{{ ecart_cadence|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <th>Désengagement</th>
-            <td>{{ desengagement|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <th>Arrêts Propres</th>
-            <td>{{ arrets_propres|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <th>Arrêts Induits</th>
-            <td>{{ arrets_induits|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <th>Non-Qualité</th>
-            <td>{{ non_qualite|floatformat:2 }}</td>
-        </tr>
-    </table>
-</div>
-<div class="section">
-    <h2>Graphiques des Arrêts</h2>
-    <div class="chart-grid">
-        <div class="chart">
-            <h3>Désengagement des moyens</h3>
-            {% if desengagement_chart %}
-            <img src="data:image/png;base64,{{ desengagement_chart|safe }}" alt="Désengagement des moyens">
-            {% else %}
-            <p>No data available</p>
-            {% endif %}
-        </div>
-        <div class="chart">
-            <h3>Les Arrêts Induits</h3>
-            {% if arrets_induits_chart %}
-            <img src="data:image/png;base64,{{ arrets_induits_chart|safe }}" alt="Les Arrêts Induits">
-            {% else %}
-            <p>No data available</p>
-            {% endif %}
-        </div>
-        <div class="chart">
-            <h3>Les Arrêts Propres</h3>
-            {% if arrets_propres_chart %}
-            <img src="data:image/png;base64,{{ arrets_propres_chart|safe }}" alt="Les Arrêts Propres">
-            {% else %}
-            <p>No data available</p>
-            {% endif %}
-        </div>
-        <div class="chart">
-            <h3>Pareto des pannes par Equipement</h3>
-            {% if pannes_equipement_chart %}
-            <img src="data:image/png;base64,{{ pannes_equipement_chart|safe }}" alt="Pareto des pannes par Equipement">
-            {% else %}
-            <p>No data available</p>
-            {% endif %}
+    <h1>Rapport Hebdomadaire - {{ ligne.nom }} - Semaine {{ semaine }}</h1>
+
+    <div class="section">
+        <h2>Indicateurs de Performance</h2>
+        <table class="indicators">
+            <tr>
+                <th>TRS</th>
+                <td>{{ trs|floatformat:2 }}%</td>
+            </tr>
+            <tr>
+                <th>Taux de Qualité</th>
+                <td>{{ taux_qualite|floatformat:2 }}%</td>
+            </tr>
+            <tr>
+                <th>Taux de Performance</th>
+                <td>{{ taux_performance|floatformat:2 }}%</td>
+            </tr>
+            <tr>
+                <th>Disponibilité Opérationnelle</th>
+                <td>{{ disponibilite_operationnelle|floatformat:2 }}%</td>
+            </tr>
+            <tr>
+                <th>Taux de Stratégie d'Engagement</th>
+                <td>{{ taux_strategie_engagement|floatformat:2 }}%</td>
+            </tr>
+            <tr>
+                <th>Taux de Charge</th>
+                <td>{{ taux_charge|floatformat:2 }}%</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Répartition du Temps</h2>
+        <table class="time-distribution">
+            <tr>
+                <th>Temps Utilisé (TU)</th>
+                <td>{{ tu|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Temps Ouverture (TO)</th>
+                <td>{{ to|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Temps Requis (TR)</th>
+                <td>{{ tr|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Temps de Fonctionnement (TF)</th>
+                <td>{{ tf|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Temps Net (TN)</th>
+                <td>{{ tn|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Écart de Cadence</th>
+                <td>{{ ecart_cadence|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Désengagement</th>
+                <td>{{ desengagement|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Arrêts Propres</th>
+                <td>{{ arrets_propres|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Arrêts Induits</th>
+                <td>{{ arrets_induits|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <th>Non-Qualité</th>
+                <td>{{ non_qualite|floatformat:2 }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Graphiques des Arrêts</h2>
+        <div class="chart-grid">
+            <div class="chart">
+                <h3>Désengagement des moyens</h3>
+                <img src="{{ desengagement_chart }}" alt="Désengagement des moyens">
+            </div>
+            <div class="chart">
+                <h3>Les Arrêts Induits</h3>
+                <img src="{{ arrets_induits_chart }}" alt="Les Arrêts Induits">
+            </div>
+            <div class="chart">
+                <h3>Les Arrêts Propres</h3>
+                <img src="{{ arrets_propres_chart }}" alt="Les Arrêts Propres">
+            </div>
+            <div class="chart">
+                <h3>Pareto des pannes par Equipement</h3>
+                <img src="{{ pannes_equipement_chart }}" alt="Pareto des pannes par Equipement">
+            </div>
         </div>
     </div>
-</div>
-<div class="section">
-    <h2>Détails des Produits</h2>
-    <table class="products">
-        <tr>
-            <th>Nom du Produit</th>
-            <th>Quantité Produite</th>
-            <th>Temps de Cycle</th>
-            <th>Objectif de Production</th>
-        </tr>
-        {% for product in product_details %}
-        <tr>
-            <td>{{ product.nom }}</td>
-            <td>{{ product.quantite_produite }}</td>
-            <td>{{ product.temps_cycle }}</td>
-            <td>{{ product.objectif_production }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
 </body>
 </html>

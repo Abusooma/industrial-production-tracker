@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Hebdomadaire par Secteur</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h1, h2 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .chart { width: 100%; max-width: 600px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+<h1>Rapport Hebdomadaire - Secteur {{ secteur.nom_secteur }}</h1>
+<p>Semaine: {{ semaine }}</p>
+
+<h2>Indicateurs de Performance</h2>
+<table>
+    <tr>
+        <th>Indicateur</th>
+        <th>Valeur</th>
+    </tr>
+    <tr>
+        <td>TRS</td>
+        <td>{{ trs }}%</td>
+    </tr>
+    <tr>
+        <td>Taux de Qualité</td>
+        <td>{{ taux_qualite }}%</td>
+    </tr>
+    <tr>
+        <td>Taux de Performance</td>
+        <td>{{ taux_performance }}%</td>
+    </tr>
+    <tr>
+        <td>Disponibilité Opérationnelle</td>
+        <td>{{ disponibilite_operationnelle }}%</td>
+    </tr>
+    <tr>
+        <td>Taux de Stratégie d'Engagement</td>
+        <td>{{ taux_strategie_engagement }}%</td>
+    </tr>
+    <tr>
+        <td>Taux de Charge</td>
+        <td>{{ taux_charge }}%</td>
+    </tr>
+</table>
+
+<h2>Temps de Production</h2>
+<table>
+    <tr>
+        <th>Temps</th>
+        <th>Valeur (heures)</th>
+    </tr>
+    <tr>
+        <td>Temps d'Ouverture (TO)</td>
+        <td>{{ to }}</td>
+    </tr>
+    <tr>
+        <td>Temps Requis (TR)</td>
+        <td>{{ tr }}</td>
+    </tr>
+    <tr>
+        <td>Temps de Fonctionnement (TF)</td>
+        <td>{{ tf }}</td>
+    </tr>
+    <tr>
+        <td>Temps Net (TN)</td>
+        <td>{{ tn }}</td>
+    </tr>
+    <tr>
+        <td>Temps Utile (TU)</td>
+        <td>{{ tu }}</td>
+    </tr>
+</table>
+
+<h2>Analyse des Arrêts</h2>
+<table>
+    <tr>
+        <th>Type d'Arrêt</th>
+        <th>Durée (heures)</th>
+    </tr>
+    <tr>
+        <td>Désengagement</td>
+        <td>{{ desengagement }}</td>
+    </tr>
+    <tr>
+        <td>Arrêts Propres</td>
+        <td>{{ arrets_propres }}</td>
+    </tr>
+    <tr>
+        <td>Arrêts Induits</td>
+        <td>{{ arrets_induits }}</td>
+    </tr>
+    <tr>
+        <td>Écart de Cadence</td>
+        <td>{{ ecart_cadence }}</td>
+    </tr>
+    <tr>
+        <td>Non Qualité</td>
+        <td>{{ non_qualite }}</td>
+    </tr>
+</table>
+
+<h2>Graphiques</h2>
+<h3>Désengagement des moyens</h3>
+<img src="data:image/png;base64,{{ desengagement_chart }}" alt="Désengagement des moyens" class="chart">
+
+<h3>Arrêts Induits</h3>
+<img src="data:image/png;base64,{{ arrets_induits_chart }}" alt="Arrêts Induits" class="chart">
+
+<h3>Arrêts Propres</h3>
+<img src="data:image/png;base64,{{ arrets_propres_chart }}" alt="Arrêts Propres" class="chart">
+
+<h3>Pareto des pannes par Équipement</h3>
+<img src="data:image/png;base64,{{ pannes_equipement_chart }}" alt="Pareto des pannes par Équipement" class="chart">
+</body>
+</html>

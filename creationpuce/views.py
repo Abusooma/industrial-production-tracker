@@ -8,6 +8,7 @@ from django.conf import settings
 
 matplotlib.use('Agg')
 
+import os
 import io
 import base64
 
@@ -528,7 +529,7 @@ def generate_daily_line_pdf(request):
     return HttpResponse("Méthode non autorisée")
 
 
-def generate_horizontal_bar_chart(data, title):
+def generate_horizontal_bar_chart(data, title, file_path):
     # Trier les données par durée décroissante
     sorted_data = sorted(data, key=lambda x: x['duree'], reverse=True)
 
@@ -540,16 +541,14 @@ def generate_horizontal_bar_chart(data, title):
     if sorted_data:
         bars = ax.barh([item['subtype_arret__description'] for item in sorted_data],
                        [item['duree'] for item in sorted_data],
-                       height=0.5)  # Réduire la hauteur des barres
+                       height=0.5)
 
         ax.set_title(title)
         ax.set_xlabel('Durée (heures)')
         ax.set_ylabel('Sous-type d\'arrêt')
 
-        # Ajuster la taille des étiquettes de l'axe y
         ax.tick_params(axis='y', labelsize=8)
 
-        # Ajouter les valeurs à la fin de chaque barre
         for bar in bars:
             width = bar.get_width()
             ax.text(width, bar.get_y() + bar.get_height() / 2, f'{width:.2f}',
@@ -558,13 +557,13 @@ def generate_horizontal_bar_chart(data, title):
         ax.text(0.5, 0.5, 'No data available', horizontalalignment='center', verticalalignment='center')
 
     plt.tight_layout()
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
+    plt.savefig(file_path, format='png', dpi=100, bbox_inches='tight')
     plt.close(fig)
-    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+    return file_path
 
 
-def generate_bar_chart(data, title):
+def generate_bar_chart(data, title, file_path):
     # Trier les données par durée décroissante
     sorted_data = sorted(data, key=lambda x: x['duree'], reverse=True)
 
@@ -576,16 +575,14 @@ def generate_bar_chart(data, title):
     if sorted_data:
         bars = ax.barh([item['moyen__nom'] for item in sorted_data],
                        [item['duree'] for item in sorted_data],
-                       height=0.5)  # Réduire la hauteur des barres
+                       height=0.5)
 
         ax.set_title(title)
         ax.set_xlabel('Durée (heures)')
         ax.set_ylabel('Équipement')
 
-        # Ajuster la taille des étiquettes de l'axe y
         ax.tick_params(axis='y', labelsize=8)
 
-        # Ajouter les valeurs à la fin de chaque barre
         for bar in bars:
             width = bar.get_width()
             ax.text(width, bar.get_y() + bar.get_height() / 2, f'{width:.2f}',
@@ -594,10 +591,10 @@ def generate_bar_chart(data, title):
         ax.text(0.5, 0.5, 'No data available', horizontalalignment='center', verticalalignment='center')
 
     plt.tight_layout()
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
+    plt.savefig(file_path, format='png', dpi=100, bbox_inches='tight')
     plt.close(fig)
-    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+    return file_path
 
 
 def generate_weekly_line_report(request):
@@ -644,14 +641,47 @@ def generate_weekly_line_report(request):
             arrets_induits = sum(p.sum_arret_induit() for p in productions)
             non_qualite = sum(p.sum_non_qualite() for p in productions)
 
-            desengagement_chart = generate_horizontal_bar_chart(get_arrets_data(productions, "engagement"),
-                                                                "Désengagement des moyens (Heures)")
-            arrets_induits_chart = generate_horizontal_bar_chart(get_arrets_data(productions, "induit"),
-                                                                 "Les Arrêts Induits (Heures)")
-            arrets_propres_chart = generate_horizontal_bar_chart(get_arrets_data(productions, "propre"),
-                                                                 "Les Arrêts Propres (Heures)")
-            pannes_equipement_chart = generate_bar_chart(get_pannes_equipement_data(productions),
-                                                         "Pareto des pannes par Equipement (Heures)")
+            # Générer et sauvegarder les graphiques
+            temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp_charts')
+            os.makedirs(temp_dir, exist_ok=True)
+
+            desengagement_chart_path = os.path.join(temp_dir,
+                                                    f"desengagement_{ligne.nom}_{start_of_week.strftime('%Y-%W')}.png")
+            generate_horizontal_bar_chart(
+                get_arrets_data(productions, "engagement"),
+                "Désengagement des moyens (Heures)",
+                desengagement_chart_path
+            )
+
+            arrets_induits_chart_path = os.path.join(temp_dir,
+                                                     f"arrets_induits_{ligne.nom}_{start_of_week.strftime('%Y-%W')}.png")
+            generate_horizontal_bar_chart(
+                get_arrets_data(productions, "induit"),
+                "Les Arrêts Induits (Heures)",
+                arrets_induits_chart_path
+            )
+
+            arrets_propres_chart_path = os.path.join(temp_dir,
+                                                     f"arrets_propres_{ligne.nom}_{start_of_week.strftime('%Y-%W')}.png")
+            generate_horizontal_bar_chart(
+                get_arrets_data(productions, "propre"),
+                "Les Arrêts Propres (Heures)",
+                arrets_propres_chart_path
+            )
+
+            pannes_equipement_chart_path = os.path.join(temp_dir,
+                                                        f"pannes_equipement_{ligne.nom}_{start_of_week.strftime('%Y-%W')}.png")
+            generate_bar_chart(
+                get_pannes_equipement_data(productions),
+                "Pareto des pannes par Equipement (Heures)",
+                pannes_equipement_chart_path
+            )
+
+            # Vérifier si les fichiers ont été créés
+            for chart_path in [desengagement_chart_path, arrets_induits_chart_path, arrets_propres_chart_path,
+                               pannes_equipement_chart_path]:
+                if not os.path.exists(chart_path):
+                    print(f"Le fichier {chart_path} n'a pas été créé.")
 
             context = {
                 'ligne': ligne,
@@ -672,11 +702,10 @@ def generate_weekly_line_report(request):
                 'arrets_propres': arrets_propres,
                 'arrets_induits': arrets_induits,
                 'non_qualite': non_qualite,
-                'desengagement_chart': desengagement_chart,
-                'arrets_induits_chart': arrets_induits_chart,
-                'arrets_propres_chart': arrets_propres_chart,
-                'pannes_equipement_chart': pannes_equipement_chart,
-                'product_details': get_product_details(productions),
+                'desengagement_chart': desengagement_chart_path,
+                'arrets_induits_chart': arrets_induits_chart_path,
+                'arrets_propres_chart': arrets_propres_chart_path,
+                'pannes_equipement_chart': pannes_equipement_chart_path,
             }
 
             template = get_template('reports/weekly_line_report.html')
@@ -686,6 +715,7 @@ def generate_weekly_line_report(request):
             response[
                 'Content-Disposition'] = f'inline; filename="rapport_hebdo_{ligne.nom}_{start_of_week.strftime("%Y-%W")}.pdf"'
 
+            # Créer le PDF
             pisa_status = pisa.CreatePDF(html, dest=response)
 
             if pisa_status.err:
@@ -693,4 +723,123 @@ def generate_weekly_line_report(request):
 
             return response
 
-    return HttpResponse('Méthode non autorisée', status=405)
+        return HttpResponse('Méthode non autorisée', status=405)
+
+
+@login_required
+def generate_weekly_sector_report(request):
+    if request.method == 'POST':
+        form = ReportForm(request.POST, report_type='weekly_sector')
+        if form.is_valid():
+            secteur = form.cleaned_data['secteur']
+            date = form.cleaned_data['date']
+
+            start_of_week = date - timedelta(days=date.weekday())
+            end_of_week = start_of_week + timedelta(days=6)
+
+            productions = Production.objects.filter(
+                secteur=secteur,
+                date_production__range=[start_of_week, end_of_week]
+            )
+
+            if not productions.exists():
+                return HttpResponse('Aucune donnée de production trouvée pour la période sélectionnée.', status=404)
+
+            # Calcul des indicateurs globaux
+            tu = sum(p.calculate_tu() for p in productions)
+            to = sum(p.sum_temps_ouverture() for p in productions)
+            tr = sum(p.calculate_tr() for p in productions)
+            tf = sum(p.calculate_tf(p.calculate_tr()) for p in productions)
+            tn = sum(p.calculate_tn(p.calculate_tf(p.calculate_tr()),
+                                    p.calculate_ecart_de_cadence(p.calculate_tf(p.calculate_tr()))) for p in
+                     productions)
+
+            taux_qualite = (tu / tn) * 100 if tn else 0
+            taux_performance = (tn / tf) * 100 if tf else 0
+            disponibilite_operationnelle = (tf / tr) * 100 if tr else 0
+            taux_strategie_engagement = (tr / to) * 100 if to else 0
+            taux_charge = (tr / to) * 100 if to else 0
+
+            trs = (taux_qualite * taux_performance * disponibilite_operationnelle) / 10000
+
+            ecart_cadence = sum(p.calculate_ecart_de_cadence(p.calculate_tf(p.calculate_tr())) for p in productions)
+            desengagement = sum(p.sum_desengagement() for p in productions)
+            arrets_propres = sum(p.sum_arret_propre() for p in productions)
+            arrets_induits = sum(p.sum_arret_induit() for p in productions)
+            non_qualite = sum(p.sum_non_qualite() for p in productions)
+
+            # Génération des graphiques
+            desengagement_chart = generate_bar_chart2(get_arrets_data(productions, "engagement"),
+                                                      "Désengagement des moyens (Heures)")
+            arrets_induits_chart = generate_bar_chart2(get_arrets_data(productions, "induit"),
+                                                       "Les Arrêts Induits (Heures)")
+            arrets_propres_chart = generate_bar_chart2(get_arrets_data(productions, "propre"),
+                                                       "Les Arrêts Propres (Heures)")
+            pannes_equipement_chart = generate_bar_chart2(get_pannes_equipement_data(productions),
+                                                          "Pareto des pannes par Equipement (Heures)")
+
+            context = {
+                'secteur': secteur,
+                'semaine': start_of_week.strftime('%Y-%W'),
+                'trs': format_value(trs),
+                'tu': format_value(tu),
+                'to': format_value(to),
+                'tr': format_value(tr),
+                'tf': format_value(tf),
+                'tn': format_value(tn),
+                'taux_qualite': format_value(taux_qualite),
+                'taux_performance': format_value(taux_performance),
+                'disponibilite_operationnelle': format_value(disponibilite_operationnelle),
+                'taux_strategie_engagement': format_value(taux_strategie_engagement),
+                'taux_charge': format_value(taux_charge),
+                'ecart_cadence': format_value(ecart_cadence),
+                'desengagement': format_value(desengagement),
+                'arrets_propres': format_value(arrets_propres),
+                'arrets_induits': format_value(arrets_induits),
+                'non_qualite': format_value(non_qualite),
+                'desengagement_chart': desengagement_chart,
+                'arrets_induits_chart': arrets_induits_chart,
+                'arrets_propres_chart': arrets_propres_chart,
+                'pannes_equipement_chart': pannes_equipement_chart,
+            }
+
+            template = get_template('reports/weekly_sector_report.html')
+            html = template.render(context)
+
+            # Génération du PDF
+            response = HttpResponse(content_type='application/pdf')
+            response[
+                'Content-Disposition'] = f'inline; filename="rapport_hebdo_secteur_{secteur.nom_secteur}_{start_of_week.strftime("%Y-%W")}.pdf"'
+
+            pisa_status = pisa.CreatePDF(html, dest=response)
+
+            if pisa_status.err:
+                return HttpResponse('Une erreur est survenue lors de la création du PDF', status=500)
+
+            return response
+
+    else:
+        form = ReportForm(report_type='weekly_sector')
+
+    return render(request, 'reports/weekly_sector_report.html', {'form': form})
+
+
+def generate_bar_chart2(data, title):
+    plt.figure(figsize=(10, 6))
+    plt.bar([item['subtype_arret__description'] for item in data], [item['duree'] for item in data])
+    plt.title(title)
+    plt.xlabel('Type d\'arrêt')
+    plt.ylabel('Durée (heures)')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    image_png = buffer.getvalue()
+    buffer.close()
+
+    graphic = base64.b64encode(image_png)
+    graphic = graphic.decode('utf-8')
+
+    return graphic

@@ -93,6 +93,8 @@
             form.action = "{% url 'generate_daily_line_pdf' %}";
         } else if (currentReportType === 'weekly_line') {
             form.action = "{% url 'generate_weekly_line_pdf' %}";
+        }else if(currentReportType === 'weekly_sector'){
+            form.action = "{% url 'weekly_sector_report' %}";
         }
         // Ajouter d'autres conditions pour les autres types de rapports si nécessaire
     }
